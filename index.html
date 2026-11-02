@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國小六年級 上學期 第一次段考線上測驗系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-10 font-sans text-slate-800">
+
+  <header class="max-w-3xl mx-auto w-full text-center mt-6 mb-10">
+    <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-full inline-block mb-3">
+      國小六年級 上學期評量
+    </span>
+    <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+      第一次段考 模擬測驗題庫系統
+    </h1>
+    <p class="text-sm md:text-base text-slate-600 mt-2">
+      請選擇下方科目開始進行自主測驗與複習
+    </p>
+  </header>
+
+  <main class="max-w-3xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 my-auto">
+    
+    <!-- 1. 數學科目卡片 -->
+    <a href="math61.html" class="group bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl border border-slate-200 hover:border-indigo-500 transition-all duration-300 flex flex-col justify-between">
+      <div>
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xl mb-4 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+          數
+        </div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-indigo-600">康軒版</span>
+          <span class="text-xs text-slate-400 font-semibold">10 套完整試卷</span>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition">
+          小六數學 第一次段考練習
+        </h2>
+        <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+          範圍：公因倍數、分數除法、數量關係、小數除法、比與比值。
+        </p>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+        進入測驗 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </div>
+    </a>
+
+    <!-- 2. 社會科目卡片 -->
+    <a href="Social61.html" class="group bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl border border-slate-200 hover:border-emerald-500 transition-all duration-300 flex flex-col justify-between">
+      <div>
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center font-black text-xl mb-4 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+          社
+        </div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-emerald-600">南一版</span>
+          <span class="text-xs text-slate-400 font-semibold">10 套完整試卷</span>
+        </div>
+        <h2 class="text-xl font-bold text-slate-900 group-hover:text-emerald-600 transition">
+          小六社會 第一次段考練習
+        </h2>
+        <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+          範圍：第一單元（日治時期臺灣的發展與變遷）與第二單元（邁向民主的社會）。
+        </p>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-bold text-emerald-600 group-hover:translate-x-1 transition-transform">
+        進入測驗 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </div>
+    </a>
+
+  </main>
+
+  <footer class="max-w-3xl mx-auto w-full text-center text-xs text-slate-400 mb-4 mt-10">
+    <p>國小六年級 線上題庫模擬測驗系統</p>
+  </footer>
+
+</body>
+</html>

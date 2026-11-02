@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國小六年級數學 第一次段考模擬測驗 (10份試卷系統)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+  </script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    .math-input {
+      font-family: inherit;
+      text-align: center;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .exam-container { border: none !important; box-shadow: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+      .explanation-block { display: block !important; }
+      body { background-color: white !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-3 md:p-8 text-slate-800 font-sans">
+
+  <!-- 頂部導覽與切換面板 -->
+  <header class="max-w-4xl mx-auto mb-6 bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 no-print">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">康軒版 第1~5單元</span>
+          <h1 class="text-xl font-bold text-slate-800">小六數學 段考模擬測驗題庫系統</h1>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">範圍：公因倍數、分數除法、數量關係、小數除法、比與比值 [10套完整卷]</p>
+      </div>
+
+      <!-- 卷別切換區 -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+        <button onclick="prevExam()" id="prevBtnHeader" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> 上一頁
+        </button>
+        
+        <select id="examSelector" onchange="changeExam(parseInt(this.value))" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-bold rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+          <!-- 10張試卷選項由 JS 動態注入 -->
+        </select>
+
+        <button onclick="nextExam()" id="nextBtnHeader" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          下一頁 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 功能按鈕列 -->
+    <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
+      <div class="text-xs font-semibold text-slate-600">
+        當前檢視：<span id="currentExamTitleDisplay" class="text-indigo-600 font-bold">卷一</span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="window.print()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> 列印本卷
+        </button>
+        <button onclick="resetCurrentExam()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> 重作本卷
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 得分統計看板 -->
+  <div id="scoreBanner" class="max-w-4xl mx-auto mb-6 bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 rounded-2xl shadow-lg hidden no-print">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h2 class="text-2xl font-black" id="bannerExamTitle">卷一 測驗完成！</h2>
+        <p class="text-indigo-100 text-sm mt-1" id="scoreComment">評語載入中...</p>
+      </div>
+      <div class="flex items-baseline gap-1 bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30">
+        <span class="text-5xl font-black" id="totalScore">0</span>
+        <span class="text-lg opacity-80">/ 100 分</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 試卷主體渲染區 -->
+  <main id="examContainer" class="exam-container max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-md border border-slate-200">
+    <!-- JS 會在此載入對應試卷內容 -->
+  </main>
+
+  <!-- 底部導覽與交卷列 -->
+  <footer class="max-w-4xl mx-auto mt-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div class="flex gap-2 w-full md:w-auto">
+      <button onclick="prevExam()" id="prevBtnFooter" class="flex-1 md:flex-none px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> 上一頁 (前一卷)
+      </button>
+      <button onclick="nextExam()" id="nextBtnFooter" class="flex-1 md:flex-none px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+        下一頁 (下一卷) <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+
+    <button onclick="submitExam()" class="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      交卷對答案 (計算本卷得分)
+    </button>
+  </footer>
+
+  <script>
+    // -------------------------------------------------------------
+    // 10 份試卷資料庫 (完整題型、數字與答案解析)
+    // -------------------------------------------------------------
+    const examDatabase = [
+      // === 卷一 ===
+      {
+        id: 0,
+        title: "第 1 套模擬試卷 (卷一)",
+        mc: [
+          { q: "關於質數與合數的敘述，下列何者正確？", ops: ["1 是最小的質數", "所有的偶數都是合數", "2 是唯一的偶質數", "兩個不同的質數公因數有兩個"], ans: "3", exp: "選 (3)。1既非質數也非合數；2是偶質數；兩相異質數只有1個公因數(即1)。" },
+          { q: "計算 $\\frac{5}{8} \\div \\frac{3}{4}$ 的結果，與下列哪一個算式相等？", ops: ["$\\frac{5}{8} \\times \\frac{3}{4}$", "$\\frac{5}{8} \\times \\frac{4}{3}$", "$\\frac{8}{5} \\times \\frac{4}{3}$", "$\\frac{8}{5} \\div \\frac{4}{3}$"], ans: "2", exp: "選 (2)。分數除法：除以分數等於乘以其倒數。" },
+          { q: "在一條長 100 公尺的直線道路一側，每隔 5 公尺種一棵樹。「兩端都要種」，一共要種幾棵樹？", ops: ["19 棵", "20 棵", "21 棵", "22 棵"], ans: "3", exp: "選 (3)。間隔數 $=100 \\div 5 = 20$ 個。兩端都種：樹數 $=$ 間隔數 $+ 1 = 21$ 棵。" },
+          { q: "在小數直式除法中，當餘數不為 0 時，餘數的小數點位置應該和下列何者對齊？", ops: ["商的小數點", "被除數「原來」的小數點", "被除數「移動後」的小數點", "除數的小數點"], ans: "2", exp: "選 (2)。餘數的小數點必須對齊被除數原始的小數點。" },
+          { q: "將比值為 $\\frac{3}{5}$ 的比寫成最簡整數比，會是下列哪一個？", ops: ["$5 : 3$", "$3 : 5$", "$6 : 8$", "$15 : 25$"], ans: "2", exp: "選 (2)。比值 $=$ 前項 $\\div$ 後項，故比值 $\\frac{3}{5}$ 為 $3 : 5$。" }
+        ],
+        fill: [
+          { q: "請將 60 進行質因數分解：$60 = $", ans: "2x2x3x5", note: "(連乘積，由小到大)", exp: "$60 = 2 \\times 2 \\times 3 \\times 5$。" },
+          { q: "已知 $A = 2 \\times 3 \\times 3 \\times 5$，$B = 2 \\times 2 \\times 3 \\times 7$：<br>(1) 最大公因數是 <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'><br>(2) 最小公倍數是 <input id='f1_2' class='math-input border-b-2 border-slate-400 w-24 text-indigo-700 font-bold'>", ans: ["6", "1260"], multi: true, exp: "(1) 最大公因數 $2 \\times 3 = 6$；(2) 最小公倍數 $2 \\times 2 \\times 3 \\times 3 \\times 5 \\times 7 = 1260$。" },
+          { q: "計算下列各式：<br>(1) $4 \\frac{2}{3} \\div 1 \\frac{1}{6} = $ <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'><br>(2) $7.2 \\div 0.18 = $ <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["4", "40"], multi: true, exp: "(1) $\\frac{14}{3} \\times \\frac{6}{7} = 4$；(2) $720 \\div 18 = 40$。" },
+          { q: "用火柴棒排相連正方形，1個用4根，2個用7根。照此規律：<br>(1) 排 5 個需要 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 根。<br>(2) 排 $N$ 個需要公式 <input id='f3_2' class='math-input border-b-2 border-slate-400 w-28 text-indigo-700 font-bold'> 根。", ans: ["16", "3xn+1"], multi: true, exp: "規律：$3 \\times N + 1$。5個需要 $3 \\times 5 + 1 = 16$ 根。" },
+          { q: "化成最簡整數比：<br>(1) $48 : 36 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'><br>(2) $\\frac{2}{5} : \\frac{3}{4} = $ <input id='f4_3' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_4' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["4", "3", "8", "15"], multi: true, exp: "(1) $48:36 = 4:3$；(2) $\\frac{2}{5}:\\frac{3}{4} = 8:15$。" }
+        ],
+        calc: [
+          { q: "求 $(42, 70)$ 的最大公因數與 $[42, 70]$ 的最小公倍數。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["14", "210"], exp: "$(42, 70) = 14$，$[42, 70] = 210$。" },
+          { q: "計算 $3 \\frac{3}{4} \\div \\frac{5}{8} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["6"], exp: "$\\frac{15}{4} \\times \\frac{8}{5} = 6$。" },
+          { q: "用直式計算：$14.28 \\div 3.4 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["4.2"], exp: "$142.8 \\div 34 = 4.2$。" },
+          { q: "求未知數 $x$ 的值：$15 : x = 5 : 8$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["24"], exp: "前項擴分3倍，故 $x = 8 \\times 3 = 24$。" }
+        ],
+        app: [
+          { q: "1. 老師有 48 顆巧克力與 72 塊餅乾分給學生，每人拿到的數量相同。最多可分給多少人？此時每人分得幾顆巧克力？", inputs: [{ label: "最多分給", id: "a0_1", unit: "人" }, { label: "每人巧克力", id: "a0_2", unit: "顆" }], ans: ["24", "2"], exp: "$(48, 72) = 24$ 人，巧克力 $48 \\div 24 = 2$ 顆。" },
+          { q: "2. 一條繩子長 $8 \\frac{2}{5}$ 公尺，每 $\\frac{3}{5}$ 公尺剪成一段。最多可剪成幾段？還剩幾公尺？", inputs: [{ label: "最多剪成", id: "a1_1", unit: "段" }, { label: "還剩下", id: "a1_2", unit: "公尺" }], ans: ["14", "0"], exp: "$\\frac{42}{5} \\div \\frac{3}{5} = 14$ 段，剩下 0 公尺。" },
+          { q: "3. 小明和小華共有 240 元，已知小明比小華多 40 元。請問兩人各有幾元？", inputs: [{ label: "小明", id: "a2_1", unit: "元" }, { label: "小華", id: "a2_2", unit: "元" }], ans: ["140", "100"], exp: "小華：$(240-40)\\div 2 = 100$ 元，小明：$100+40 = 140$ 元。" },
+          { q: "4. 男生與女生人數比是 $7 : 5$，女生有 350 人，求男學生人數與全校總人數？", inputs: [{ label: "男學生", id: "a3_1", unit: "人" }, { label: "全校人數", id: "a3_2", unit: "人" }], ans: ["490", "840"], exp: "一份 $350 \\div 5 = 70$ 人。男生 $70 \\times 7 = 490$ 人，全校 $490+350=840$ 人。" },
+          { q: "5. 水桶 12.5 公升，用 0.8 公升的水杯裝滿倒出。最多可裝滿幾杯？還剩幾公升？", inputs: [{ label: "裝滿", id: "a4_1", unit: "杯" }, { label: "剩下", id: "a4_2", unit: "公升" }], ans: ["15", "0.5"], exp: "$12.5 \\div 0.8 = 15 \\dots 0.5$ 公升。" }
+        ]
+      },
+
+      // === 卷二 ===
+      {
+        id: 1,
+        title: "第 2 套模擬試卷 (卷二)",
+        mc: [
+          { q: "下列哪一組數字「互質」？", ops: ["12 和 18", "15 和 28", "21 和 35", "27 和 36"], ans: "2", exp: "選 (2)。$(15, 28) = 1$，兩數互質。" },
+          { q: "當被除數與除數均大於0，且除數小於1時，商與被除數的大小關係為何？", ops: ["商 $>$ 被除數", "商 $<$ 被除數", "商 $=$ 被除數", "無法比較"], ans: "1", exp: "選 (1)。除數小於1（大於0）時，商會比被除數大。" },
+          { q: "周長 120 公尺的正方形花圃周圍，每隔 6 公尺插一支旗子，角落都插。共需幾支旗子？", ops: ["19 支", "20 支", "21 支", "24 支"], ans: "2", exp: "選 (2)。封閉路線旗子數 $=$ 間隔數 $= 120 \\div 6 = 20$ 支。" },
+          { q: "計算 $3.6 \\div 0.12$ 時，將被除數與除數小數點均右移兩位，其結果會如何？", ops: ["變大100倍", "變小100倍", "保持不變", "變大10倍"], ans: "3", exp: "選 (3)。根據商不變性質，商保持不變。" },
+          { q: "若 $A : B = 4 : 7$，且 $B = 35$，則 $A$ 的值是多少？", ops: ["20", "28", "30", "40"], ans: "1", exp: "選 (1)。$7 \\times 5 = 35$，故 $A = 4 \\times 5 = 20$。" }
+        ],
+        fill: [
+          { q: "將 84 進行質因數分解：$84 = $", ans: "2x2x3x7", note: "(連乘積)", exp: "$84 = 2 \\times 2 \\times 3 \\times 7$。" },
+          { q: "計算：<br>(1) $3 \\frac{1}{3} \\div \\frac{5}{9} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'><br>(2) $5.4 \\div 0.45 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["6", "12"], multi: true, exp: "(1) $\\frac{10}{3} \\times \\frac{9}{5} = 6$；(2) $540 \\div 45 = 12$。" },
+          { q: "觀察數的關係：<br>(1) $24 \\times 15 = 360 \\Rightarrow 240 \\times 1.5 = $ <input id='f2_1' class='math-input border-b-2 border-slate-400 w-20 text-indigo-700 font-bold'><br>(2) $150 \\div 25 = 6 \\Rightarrow 1.5 \\div 0.25 = $ <input id='f2_2' class='math-input border-b-2 border-slate-400 w-20 text-indigo-700 font-bold'>", ans: ["360", "6"], multi: true, exp: "(1) 積不變 $\\rightarrow 360$；(2) 商不變 $\\rightarrow 6$。" },
+          { q: "用棋子擺空心正方形，每邊4顆要12顆。若每邊擺 $N$ 顆：<br>(1) 每邊 8 顆需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆。<br>(2) 公式為 <input id='f3_2' class='math-input border-b-2 border-slate-400 w-28 text-indigo-700 font-bold'> 顆。", ans: ["28", "4x(n-1)"], multi: true, exp: "公式：$4 \\times (N-1)$。每邊8顆需 $4 \\times 7 = 28$ 顆。" },
+          { q: "化成最簡整數比：<br>(1) $0.8 : 1.2 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'><br>(2) $1 \\frac{1}{2} : 2 \\frac{1}{4} = $ <input id='f4_3' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_4' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["2", "3", "2", "3"], multi: true, exp: "(1) $8:12 = 2:3$；(2) $\\frac{3}{2}:\\frac{9}{4} = 6:9 = 2:3$。" }
+        ],
+        calc: [
+          { q: "求 $(36, 90)$ 與 $[36, 90]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["18", "180"], exp: "$(36, 90) = 18$，$[36, 90] = 180$。" },
+          { q: "計算 $4 \\frac{1}{6} \\div 2 \\frac{1}{12} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["2"], exp: "$\\frac{25}{6} \\times \\frac{12}{25} = 2$。" },
+          { q: "用直式計算：$9.12 \\div 0.38 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["24"], exp: "$912 \\div 38 = 24$。" },
+          { q: "求未知數 $x$：$\\frac{3}{4} : \\frac{1}{2} = 12 : x$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["8"], exp: "$\\frac{3}{4}:\\frac{1}{2} = 3:2 = 12:8 \\Rightarrow x=8$。" }
+        ],
+        app: [
+          { q: "1. 長 30cm、寬 18cm 的紙剪成最大的相同正方形不剩下。邊長幾cm？可剪幾張？", inputs: [{ label: "邊長", id: "a0_1", unit: "cm" }, { label: "剪成", id: "a0_2", unit: "張" }], ans: ["6", "15"], exp: "邊長 $(30, 18) = 6$ cm，張數 $(30\\div 6)\\times(18\\div 6) = 15$ 張。" },
+          { q: "2. 果汁 $2 \\frac{1}{2}$ 公升，每 $\\frac{3}{10}$ 公升倒滿一杯。可倒幾杯？剩幾公升？", inputs: [{ label: "倒滿", id: "a1_1", unit: "杯" }, { label: "剩下", id: "a1_2", unit: "公升" }], ans: ["8", "1/10"], exp: "$\\frac{5}{2} \\div \\frac{3}{10} = 8 \\frac{1}{3}$，剩下 $\\frac{3}{10} \\times \\frac{1}{3} = \\frac{1}{10}$ (或0.1) 公升。" },
+          { q: "3. 爸爸體重是小明的 3 倍，爸爸比小明重 48 公斤。兩人體重各是多少？", inputs: [{ label: "爸爸", id: "a2_1", unit: "kg" }, { label: "小明", id: "a2_2", unit: "kg" }], ans: ["72", "24"], exp: "小明：$48 \\div 2 = 24$ kg，爸爸：$24 \\times 3 = 72$ kg。" },
+          { q: "4. 麵粉與奶油重量比 $5 : 2$，用了 450 克麵粉，需多少奶油？麵團總重多少？", inputs: [{ label: "奶油", id: "a3_1", unit: "g" }, { label: "總重", id: "a3_2", unit: "g" }], ans: ["180", "630"], exp: "奶油 $450 \\div 5 \\times 2 = 180$ g，總重 $450+180=630$ g。" },
+          { q: "5. 長方形土地面積 18.75 平方公尺，長是 7.5 公尺。寬與周長分別是多少？", inputs: [{ label: "寬", id: "a4_1", unit: "m" }, { label: "周長", id: "a4_2", unit: "m" }], ans: ["2.5", "20"], exp: "寬 $= 18.75 \\div 7.5 = 2.5$ m，周長 $= (7.5+2.5)\\times 2 = 20$ m。" }
+        ]
+      },
+
+      // === 卷三 ===
+      {
+        id: 2,
+        title: "第 3 套模擬試卷 (卷三)",
+        mc: [
+          { q: "100 以內最大的質數是多少？", ops: ["91", "93", "97", "99"], ans: "3", exp: "選 (3)。97是100以內最大的質數。" },
+          { q: "計算 $\\frac{3}{5} \\div 4$ 的結果是多少？", ops: ["$\\frac{12}{5}$", "$\\frac{3}{20}$", "$\\frac{15}{4}$", "$\\frac{20}{3}$"], ans: "2", exp: "選 (2)。$\\frac{3}{5} \\times \\frac{1}{4} = \\frac{3}{20}$。" },
+          { q: "圓形跑道一圈 200 公尺，每隔 10 公尺站一位學生，共需幾位學生？", ops: ["19 人", "20 人", "21 人", "22 人"], ans: "2", exp: "選 (2)。圓形封閉路線：人數 $=$ 間隔數 $= 200 \\div 10 = 20$ 人。" },
+          { q: "計算 $12.5 \\div 0.25$ 等於下列何者？", ops: ["5", "50", "500", "0.5"], ans: "2", exp: "選 (2)。$1250 \\div 25 = 50$。" },
+          { q: "若 $x : 15 = 4 : 5$，則 $x = ?$", ops: ["10", "12", "14", "16"], ans: "2", exp: "選 (2)。後項 $5 \\times 3 = 15$，故 $x = 4 \\times 3 = 12$。" }
+        ],
+        fill: [
+          { q: "將 90 進行質因數分解：$90 = $", ans: "2x3x3x5", note: "(連乘積)", exp: "$90 = 2 \\times 3 \\times 3 \\times 5$。" },
+          { q: "計算：<br>(1) $5 \\frac{1}{3} \\div 1 \\frac{7}{9} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'><br>(2) $9.6 \\div 0.32 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["3", "30"], multi: true, exp: "(1) $\\frac{16}{3} \\times \\frac{9}{16} = 3$；(2) $960 \\div 32 = 30$。" },
+          { q: "兩數之和為 96，差為 24。大數為 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，小數為 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["60", "36"], multi: true, exp: "大數 $(96+24)\\div 2 = 60$，小數 $60-24=36$。" },
+          { q: "擺梯形，1層1個，2層3個，3層6個。5層需要 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 個。", ans: ["15"], exp: "1+2+3+4+5 = 15 個。" },
+          { q: "最簡整數比：$1.5 : 2.5 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["3", "5"], multi: true, exp: "$15:25 = 3:5$。" }
+        ],
+        calc: [
+          { q: "求 $(48, 72)$ 與 $[48, 72]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["24", "144"], exp: "$(48, 72) = 24$，$[48, 72] = 144$。" },
+          { q: "計算 $2 \\frac{4}{7} \\div 1 \\frac{2}{7} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["2"], exp: "$\\frac{18}{7} \\times \\frac{7}{9} = 2$。" },
+          { q: "用直式計算：$8.4 \div 0.24 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["35"], exp: "$840 \\div 24 = 35$。" },
+          { q: "求 $x$：$2.4 : x = 0.6 : 1.5$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["6"], exp: "擴分4倍，故 $x = 1.5 \\times 4 = 6$。" }
+        ],
+        app: [
+          { q: "1. 30 人與 45 人分組，每組人數相同且剛好分完。每組最多幾人？共分成幾組？", inputs: [{ label: "每組最多", id: "a0_1", unit: "人" }, { label: "共分成", id: "a0_2", unit: "組" }], ans: ["15", "5"], exp: "$(30, 45) = 15$ 人，組數 $(30+45)\\div 15 = 5$ 組。" },
+          { q: "2. 繩子長 $6 \\frac{2}{3}$ 公尺，每 $\frac{4}{5}$ 公尺剪一段。可剪幾段？剩幾公尺？", inputs: [{ label: "段數", id: "a1_1", unit: "段" }, { label: "剩", id: "a1_2", unit: "公尺" }], ans: ["8", "4/15"], exp: "$\\frac{20}{3} \\div \\frac{4}{5} = 8 \\frac{1}{3}$，剩 $\\frac{4}{5} \\times \\frac{1}{3} = \\frac{4}{15}$ 公尺。" },
+          { q: "3. 姊姊錢是妹妹的 4 倍，兩人共有 500 元。兩人各有幾元？", inputs: [{ label: "姊姊", id: "a2_1", unit: "元" }, { label: "妹妹", id: "a2_2", unit: "元" }], ans: ["400", "100"], exp: "妹妹 $500 \\div 5 = 100$ 元，姊姊 $100 \\times 4 = 400$ 元。" },
+          { q: "4. 果汁與水的比是 $3 : 8$，用了 600c.c. 的果汁，需要多少水？調配出多少總飲品？", inputs: [{ label: "需要水", id: "a3_1", unit: "c.c." }, { label: "總飲品", id: "a3_2", unit: "c.c." }], ans: ["1600", "2200"], exp: "水 $600 \\div 3 \\times 8 = 1600$ c.c.，總量 $600+1600=2200$ c.c.。" },
+          { q: "5. 汽油 3.6 公升可跑 54 公里。1公升跑幾公里？跑 90 公里需幾公升汽油？", inputs: [{ label: "1公升跑", id: "a4_1", unit: "km" }, { label: "需要", id: "a4_2", unit: "公升" }], ans: ["15", "6"], exp: "1公升：$54 \\div 3.6 = 15$ km，汽油：$90 \\div 15 = 6$ 公升。" }
+        ]
+      },
+
+      // === 卷四 ===
+      {
+        id: 3,
+        title: "第 4 套模擬試卷 (卷四)",
+        mc: [
+          { q: "下列哪一個數是合數？", ops: ["17", "23", "29", "33"], ans: "4", exp: "選 (4)。$33 = 3 \\times 11$，為合數。" },
+          { q: "计算 $\\frac{4}{9} \\div \\frac{2}{3}$ 的最簡分數結果為何？", ops: ["$\\frac{2}{3}$", "$\\frac{8}{27}$", "$\\frac{3}{2}$", "$\\frac{1}{3}$"], ans: "1", exp: "選 (1)。$\\frac{4}{9} \\times \\frac{3}{2} = \\frac{2}{3}$。" },
+          { q: "道路兩端都不種樹，長50公尺，每隔5公尺種一棵，共種幾棵？", ops: ["9 棵", "10 棵", "11 棵", "12 棵"], ans: "1", exp: "選 (1)。兩端都不種：棵數 $=$ 間隔數 $- 1 = 10 - 1 = 9$ 棵。" },
+          { q: "小數除法中，餘數的小數點位置應對齊何處？", ops: ["商的小數點", "原被除數小數點", "新被除數小數點", "除數小數點"], ans: "2", exp: "選 (2)。對齊原被除數小數點。" },
+          { q: "若 $2 : 3 = x : 18$，則 $x = ?$", ops: ["9", "12", "15", "16"], ans: "2", exp: "選 (2)。$3 \\times 6 = 18 \\Rightarrow x = 2 \\times 6 = 12$。" }
+        ],
+        fill: [
+          { q: "將 75 質因數分解：$75 = $", ans: "3x5x5", note: "(連乘積)", exp: "$75 = 3 \\times 5 \\times 5$。" },
+          { q: "計算：(1) $6 \\div \\frac{3}{4} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $4.8 \\div 0.12 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["8", "40"], multi: true, exp: "(1) $6 \\times \\frac{4}{3} = 8$；(2) $480 \\div 12 = 40$。" },
+          { q: "排實心正方形，每邊 6 顆需 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆棋子。", ans: ["36"], exp: "$6 \\times 6 = 36$ 顆。" },
+          { q: "比值 $\\frac{4}{7}$ 的最簡整數比是 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f3_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["4", "7"], multi: true, exp: "$4 : 7$。" },
+          { q: "化簡比：$\\frac{1}{3} : \\frac{1}{5} = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["5", "3"], multi: true, exp: "交叉相乘為 $5 : 3$。" }
+        ],
+        calc: [
+          { q: "求 $(24, 60)$ 與 $[24, 60]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["12", "120"], exp: "$(24, 60) = 12$，$[24, 60] = 120$。" },
+          { q: "計算 $1 \\frac{7}{8} \\div \\frac{5}{6} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["2.25"], exp: "$\\frac{15}{8} \\times \\frac{6}{5} = \\frac{9}{4} = 2.25$ (或 $2 \\frac{1}{4}$)。" },
+          { q: "用直式計算：$15.6 \\div 2.4 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["6.5"], exp: "$156 \\div 24 = 6.5$。" },
+          { q: "求 $x$：$5 : 8 = 35 : x$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["56"], exp: "$5 \\times 7 = 35 \\Rightarrow x = 8 \\times 7 = 56$。" }
+        ],
+        app: [
+          { q: "1. 公車A每10分鐘發車，公車B每15分鐘發車。早上6:00同時發車，下一次同時發車是幾點幾分？", inputs: [{ label: "小時", id: "a0_1", unit: "點" }, { label: "分鐘", id: "a0_2", unit: "分" }], ans: ["6", "30"], exp: "$[10, 15] = 30$ 分鐘，6:00加30分是 6:30。" },
+          { q: "2. 麵包粉 $4 \\frac{1}{2}$ 公斤，每 $\frac{3}{4}$ 公斤做一個蛋糕。可做幾個？剩幾公斤？", inputs: [{ label: "可做", id: "a1_1", unit: "個" }, { label: "剩", id: "a1_2", unit: "kg" }], ans: ["6", "0"], exp: "$\\frac{9}{2} \\div \\frac{3}{4} = 6$ 個，剩 0 kg。" },
+          { q: "3. 兄妹年齡和是 28 歲，兄比妹大 4 歲。兄妹各幾歲？", inputs: [{ label: "兄", id: "a2_1", unit: "歲" }, { label: "妹", id: "a2_2", unit: "歲" }], ans: ["16", "12"], exp: "妹 $(28-4)\\div 2 = 12$ 歲，兄 $12+4=16$ 歲。" },
+          { q: "4. 水泥與砂石重量比 $2 : 5$，現有水泥 300 kg，需砂石多少kg？混合成水泥砂漿多少kg？", inputs: [{ label: "砂石", id: "a3_1", unit: "kg" }, { label: "總重", id: "a3_2", unit: "kg" }], ans: ["750", "1050"], exp: "砂石 $300 \\div 2 \\times 5 = 750$ kg，總重 $300+750=1050$ kg。" },
+          { q: "5. 布料 8.4 公尺做衣服，每套用 1.5 公尺。可做幾套？剩幾公尺？", inputs: [{ label: "可做", id: "a4_1", unit: "套" }, { label: "剩", id: "a4_2", unit: "m" }], ans: ["5", "0.9"], exp: "$8.4 \\div 1.5 = 5 \\dots 0.9$ 公尺。" }
+        ]
+      },
+
+      // === 卷五 ===
+      {
+        id: 4,
+        title: "第 5 套模擬試卷 (卷五)",
+        mc: [
+          { q: "最小的合數是多少？", ops: ["1", "2", "4", "6"], ans: "3", exp: "選 (3)。4是最小的合數。" },
+          { q: "計算 $\\frac{7}{10} \\div \\frac{14}{15} = ?$", ops: ["$\\frac{3}{4}$", "$\\frac{4}{3}$", "$\\frac{98}{150}$", "$\\frac{1}{2}$"], ans: "1", exp: "選 (1)。$\\frac{7}{10} \\times \\frac{15}{14} = \\frac{3}{4}$。" },
+          { q: "正方形邊長變為原來的 3 倍，周長變為原來的幾倍？", ops: ["3 倍", "6 倍", "9 倍", "12 倍"], ans: "1", exp: "選 (1)。周長與邊長成正比，變為 3 倍。" },
+          { q: "計算 $0.72 \\div 0.09 = ?$", ops: ["0.8", "8", "80", "800"], ans: "2", exp: "選 (2)。$72 \\div 9 = 8$。" },
+          { q: "最簡整數比中，前後項必須滿足什麼條件？", ops: ["都是質數", "都是偶數", "互質", "前項大於後項"], ans: "3", exp: "選 (3)。前後項必須是互質的整數。" }
+        ],
+        fill: [
+          { q: "將 120 質因數分解：$120 = $", ans: "2x2x2x3x5", note: "(連乘積)", exp: "$120 = 2 \\times 2 \\times 2 \\times 3 \\times 5$。" },
+          { q: "計算：(1) $3 \\frac{3}{5} \\div 1 \\frac{1}{5} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $6.3 \\div 0.21 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["3", "30"], multi: true, exp: "(1) $\\frac{18}{5} \\times \\frac{5}{6} = 3$；(2) $630 \\div 21 = 30$。" },
+          { q: "甲乙兩數之和為 150，甲是乙的 4 倍。甲為 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，乙為 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["120", "30"], multi: true, exp: "乙 $150 \\div 5 = 30$，甲 $30 \\times 4 = 120$。" },
+          { q: "圓形池塘周長 300 公尺，每隔 15 公尺種一棵樹，共需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 棵樹。", ans: ["20"], exp: "封閉路線：$300 \\div 15 = 20$ 棵。" },
+          { q: "化簡比：$2.4 : 3.6 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["2", "3"], multi: true, exp: "$24:36 = 2:3$。" }
+        ],
+        calc: [
+          { q: "求 $(54, 90)$ 與 $[54, 90]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["18", "270"], exp: "$(54, 90) = 18$，$[54, 90] = 270$。" },
+          { q: "計算 $5 \\frac{1}{4} \\div 1 \\frac{3}{4} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["3"], exp: "$\\frac{21}{4} \\times \\frac{4}{7} = 3$。" },
+          { q: "用直式計算：$18.9 \\div 0.45 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["42"], exp: "$1890 \\div 45 = 42$。" },
+          { q: "求 $x$：$3 : 7 = 21 : x$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["49"], exp: "$3 \\times 7 = 21 \\Rightarrow x = 7 \\times 7 = 49$。" }
+        ],
+        app: [
+          { q: "1. 正方形冰磚邊長為整數，鋪滿長 90cm、寬 60cm 的長方形冰櫃。冰磚最大邊長多少cm？需幾塊？", inputs: [{ label: "邊長", id: "a0_1", unit: "cm" }, { label: "需要", id: "a0_2", unit: "塊" }], ans: ["30", "6"], exp: "邊長 $(90, 60) = 30$ cm，塊數 $(90\\div 30)\\times(60\\div 30) = 6$ 塊。" },
+          { q: "2. 沙拉油 $3 \\frac{3}{4}$ 公升，每 $\frac{1}{2}$ 公升分裝成一瓶。可裝幾瓶？剩幾公升？", inputs: [{ label: "可裝", id: "a1_1", unit: "瓶" }, { label: "剩", id: "a1_2", unit: "L" }], ans: ["7", "1/4"], exp: "$\\frac{15}{4} \\div \\frac{1}{2} = 7 \\frac{1}{2}$，剩 $\\frac{1}{2} \\times \\frac{1}{2} = \\frac{1}{4}$ (或0.25) 公升。" },
+          { q: "3. 媽媽比女兒大 27 歲，今年媽媽年齡是女兒的 4 倍。兩人今年各幾歲？", inputs: [{ label: "媽媽", id: "a2_1", unit: "歲" }, { label: "女兒", id: "a2_2", unit: "歲" }], ans: ["36", "9"], exp: "女兒 $27 \\div 3 = 9$ 歲，媽媽 $9 \\times 4 = 36$ 歲。" },
+          { q: "4. 紅豆與黃豆比是 $3 : 4$，紅豆有 15 kg，黃豆需多少kg？混合後共多少kg？", inputs: [{ label: "黃豆", id: "a3_1", unit: "kg" }, { label: "混合", id: "a3_2", unit: "kg" }], ans: ["20", "35"], exp: "黃豆 $15 \\div 3 \\times 4 = 20$ kg，共 $15+20=35$ kg。" },
+          { q: "5. 油漆 2.5 公升可刷 10 平方公尺牆壁。1公升可刷多少？刷 24 平方公尺需多少油漆？", inputs: [{ label: "1公升刷", id: "a4_1", unit: "m²" }, { label: "需油漆", id: "a4_2", unit: "L" }], ans: ["4", "6"], exp: "1公升：$10 \\div 2.5 = 4$ m²，油漆：$24 \\div 4 = 6$ 公升。" }
+        ]
+      },
+
+      // === 卷六 ===
+      {
+        id: 5,
+        title: "第 6 套模擬試卷 (卷六)",
+        mc: [
+          { q: "20 到 30 之間的質數共有幾個？", ops: ["1 個", "2 個", "3 個", "4 個"], ans: "2", exp: "選 (2)。有 23 與 29 兩個。" },
+          { q: "計算 $1 \\frac{1}{2} \\div 1 \\frac{1}{2} = ?$", ops: ["0", "1", "$2 \\frac{1}{4}$", "$\\frac{9}{4}$"], ans: "2", exp: "選 (2)。相同的數相除等於 1。" },
+          { q: "長方形長邊與寬邊均擴大為 2 倍，面積變為幾倍？", ops: ["2 倍", "4 倍", "6 倍", "8 倍"], ans: "2", exp: "選 (2)。面積變為 $2 \\times 2 = 4$ 倍。" },
+          { q: "在直式除法中，被除數乘以 10，除數不變，商會如何？", ops: ["乘以 10", "除以 10", "不變", "乘以 100"], ans: "1", exp: "選 (1)。被除數變大 10 倍，商也變大 10 倍。" },
+          { q: "若 $x : 10 = 0.6 : 1.2$，求 $x = ?$", ops: ["3", "5", "6", "8"], ans: "2", exp: "選 (2)。$0.6 : 1.2 = 1 : 2$，故 $x : 10 = 1 : 2 \\Rightarrow x = 5$。" }
+        ],
+        fill: [
+          { q: "將 105 質因數分解：$105 = $", ans: "3x5x7", note: "(連乘積)", exp: "$105 = 3 \\times 5 \\times 7$。" },
+          { q: "計算：(1) $2 \\frac{2}{3} \\div \\frac{8}{9} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $8.1 \\div 0.27 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["3", "30"], multi: true, exp: "(1) $\\frac{8}{3} \\times \\frac{9}{8} = 3$；(2) $810 \\div 27 = 30$。" },
+          { q: "兩數相差 36，大數是小數的 3 倍。大數是 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，小數是 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["54", "18"], multi: true, exp: "小數 $36 \\div 2 = 18$，大數 $18 \\times 3 = 54$。" },
+          { q: "正三角形每邊擺 5 顆棋子，角落都擺。共需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆棋子。", ans: ["12"], exp: "$3 \\times (5-1) = 12$ 顆。" },
+          { q: "最簡整數比：$0.45 : 0.6 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["3", "4"], multi: true, exp: "$45:60 = 3:4$。" }
+        ],
+        calc: [
+          { q: "求 $(32, 48)$ 與 $[32, 48]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["16", "96"], exp: "$(32, 48) = 16$，$[32, 48] = 96$。" },
+          { q: "計算 $3 \\frac{1}{3} \\div 1 \\frac{1}{4} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["2.667"], exp: "$\\frac{10}{3} \\times \\frac{4}{5} = \\frac{8}{3} = 2 \\frac{2}{3}$ (或 8/3)。" },
+          { q: "用直式計算：$11.76 \\div 2.8 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["4.2"], exp: "$117.6 \\div 28 = 4.2$。" },
+          { q: "求 $x$：$4 : 9 = x : 36$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["16"], exp: "$9 \\times 4 = 36 \\Rightarrow x = 4 \\times 4 = 16$。" }
+        ],
+        app: [
+          { q: "1. 蘋果 40 個、橘子 60 個分裝成水果禮盒，每盒水果數量相同。最多裝幾盒？每盒橘子有幾個？", inputs: [{ label: "最多裝", id: "a0_1", unit: "盒" }, { label: "每盒橘子", id: "a0_2", unit: "個" }], ans: ["20", "3"], exp: "$(40, 60) = 20$ 盒，橘子 $60 \\div 20 = 3$ 個。" },
+          { q: "2. 鐵絲 $5 \\frac{1}{3}$ 公尺，每 $\frac{2}{3}$ 公尺截成一段。可截成幾段？剩幾公尺？", inputs: [{ label: "可截成", id: "a1_1", unit: "段" }, { label: "剩", id: "a1_2", unit: "m" }], ans: ["8", "0"], exp: "$\\frac{16}{3} \\div \\frac{2}{3} = 8$ 段，剩 0 公尺。" },
+          { q: "3. 小林和小陳儲蓄總和 1200 元，小林比小陳多 200 元。兩人各有幾元？", inputs: [{ label: "小林", id: "a2_1", unit: "元" }, { label: "小陳", id: "a2_2", unit: "元" }], ans: ["700", "500"], exp: "小陳 $(1200-200)\\div 2 = 500$ 元，小林 $500+200=700$ 元。" },
+          { q: "4. 模型車比例尺 $1 : 24$，若模型車長 20 公分，實際車長是多少公分？等於多少公尺？", inputs: [{ label: "實際cm", id: "a3_1", unit: "cm" }, { label: "等於m", id: "a3_2", unit: "m" }], ans: ["480", "4.8"], exp: "實際長 $20 \\times 24 = 480$ cm $= 4.8$ m。" },
+          { q: "5. 牛肉 1.6 公斤售價 400 元。1公斤售價多少元？買 2.5 公斤需多少元？", inputs: [{ label: "1公斤", id: "a4_1", unit: "元" }, { label: "2.5公斤", id: "a4_2", unit: "元" }], ans: ["250", "625"], exp: "1公斤：$400 \\div 1.6 = 250$ 元，2.5公斤：$250 \\times 2.5 = 625$ 元。" }
+        ]
+      },
+
+      // === 卷七 ===
+      {
+        id: 6,
+        title: "第 7 套模擬試卷 (卷七)",
+        mc: [
+          { q: "下列哪一個數與 35 互質？", ops: ["14", "15", "18", "21"], ans: "3", exp: "選 (3)。$(35, 18) = 1$。" },
+          { q: "計算 $\\frac{8}{15} \\div \\frac{4}{5} = ?$", ops: ["$\\frac{2}{3}$", "$\\frac{32}{75}$", "$\\frac{3}{2}$", "$\\frac{1}{3}$"], ans: "1", exp: "選 (1)。$\\frac{8}{15} \\times \\frac{5}{4} = \\frac{2}{3}$。" },
+          { q: "長 40m 直路一側每隔 8m 放垃圾桶，兩端都不放，需幾個垃圾桶？", ops: ["4 個", "5 個", "6 個", "7 個"], ans: "1", exp: "選 (1)。兩端都不放：$40 \\div 8 - 1 = 4$ 個。" },
+          { q: "計算 $15.6 \\div 0.03$ 的結果是多少？", ops: ["5.2", "52", "520", "5200"], ans: "3", exp: "選 (3)。$1560 \\div 3 = 520$。" },
+          { q: "若 $A : B = 5 : 8$，且 $A = 35$，求 $B = ?$", ops: ["40", "48", "56", "64"], ans: "3", exp: "選 (3)。$5 \\times 7 = 35 \\Rightarrow B = 8 \\times 7 = 56$。" }
+        ],
+        fill: [
+          { q: "將 150 質因數分解：$150 = $", ans: "2x3x5x5", note: "(連乘積)", exp: "$150 = 2 \\times 3 \\times 5 \\times 5$。" },
+          { q: "計算：(1) $4 \\frac{1}{2} \\div 1 \\frac{1}{8} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $7.5 \\div 0.25 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["4", "30"], multi: true, exp: "(1) $\\frac{9}{2} \\times \\frac{8}{9} = 4$；(2) $750 \\div 25 = 30$。" },
+          { q: "桌子一張坐4人，併排2張坐6人，併排3張坐8人。併排 6 張可坐 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 人。", ans: ["14"], exp: "規律 $2 \\times N + 2$。6張可坐 $2 \\times 6 + 2 = 14$ 人。" },
+          { q: "比值 0.75 化成最簡整數比是 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f3_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["3", "4"], multi: true, exp: "$0.75 = \\frac{3}{4} \\Rightarrow 3:4$。" },
+          { q: "化簡比：$\\frac{3}{8} : \\frac{9}{16} = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["2", "3"], multi: true, exp: "同乘 16：$6:9 = 2:3$。" }
+        ],
+        calc: [
+          { q: "求 $(45, 75)$ 與 $[45, 75]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["15", "225"], exp: "$(45, 75) = 15$，$[45, 75] = 225$。" },
+          { q: "計算 $6 \\frac{2}{3} \\div 2 \\frac{2}{9} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["3"], exp: "$\\frac{20}{3} \\times \\frac{9}{20} = 3$。" },
+          { q: "用直式計算：$13.5 \div 0.18 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["75"], exp: "$1350 \\div 18 = 75$。" },
+          { q: "求 $x$：$0.8 : 1.2 = x : 15$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["10"], exp: "$0.8:1.2 = 2:3 = 10:15 \\Rightarrow x=10$。" }
+        ],
+        app: [
+          { q: "1. 班級學生 24 人與 36 人進行分隊排隊，每隊人數相同。每隊最多幾人？共排成幾隊？", inputs: [{ label: "每隊最多", id: "a0_1", unit: "人" }, { label: "共排成", id: "a0_2", unit: "隊" }], ans: ["12", "5"], exp: "$(24, 36) = 12$ 人，隊數 $(24+36)\\div 12 = 5$ 隊。" },
+          { q: "2. 鮮奶 $4 \\frac{4}{5}$ 公升，每 $\frac{3}{5}$ 公升倒滿一杯。可倒幾杯？剩幾公升？", inputs: [{ label: "可倒", id: "a1_1", unit: "杯" }, { label: "剩", id: "a1_2", unit: "L" }], ans: ["8", "0"], exp: "$\\frac{24}{5} \\div \\frac{3}{5} = 8$ 杯，剩 0 公升。" },
+          { q: "3. 兩數之和為 180，大數是小數的 5 倍。大數和小數分別是多少？", inputs: [{ label: "大數", id: "a2_1", unit: "" }, { label: "小數", id: "a2_2", unit: "" }], ans: ["150", "30"], exp: "小數 $180 \\div 6 = 30$，大數 $30 \\times 5 = 150$。" },
+          { q: "4. 男生與女生人數比是 $4 : 3$，若男生有 160 人，女生有幾人？全班共幾人？", inputs: [{ label: "女生", id: "a3_1", unit: "人" }, { label: "全班", id: "a3_2", unit: "人" }], ans: ["120", "280"], exp: "女生 $160 \\div 4 \\times 3 = 120$ 人，全班 $160+120=280$ 人。" },
+          { q: "5. 汽車 4.5 小時行駛 360 公里。時速是多少公里？行駛 600 公里需要多少小時？", inputs: [{ label: "時速", id: "a4_1", unit: "km/h" }, { label: "需要", id: "a4_2", unit: "小時" }], ans: ["80", "7.5"], exp: "時速 $360 \\div 4.5 = 80$ km/h，時間 $600 \\div 80 = 7.5$ 小時。" }
+        ]
+      },
+
+      // === 卷八 ===
+      {
+        id: 7,
+        title: "第 8 套模擬試卷 (卷八)",
+        mc: [
+          { q: "1 到 20 之間的質數共有幾個？", ops: ["7 個", "8 個", "9 個", "10 個"], ans: "2", exp: "選 (2)。有 2, 3, 5, 7, 11, 13, 17, 19 共 8 個。" },
+          { q: "計算 $\\frac{9}{14} \\div \\frac{3}{7} = ?$", ops: ["$\\frac{3}{2}$", "$\\frac{23}{98}$", "$\\frac{2}{3}$", "$\\frac{27}{98}$"], ans: "1", exp: "選 (1)。$\\frac{9}{14} \\times \\frac{7}{3} = \\frac{3}{2}$。" },
+          { q: "梯形陣形，第1排2人，第2排4人，第3排6人。第 10 排有幾人？", ops: ["18 人", "20 人", "22 人", "24 人"], ans: "2", exp: "選 (2)。規律 $2 \\times N$，第 10 排為 $2 \\times 10 = 20$ 人。" },
+          { q: "計算 $0.48 \\div 0.06 = ?$", ops: ["0.8", "8", "80", "800"], ans: "2", exp: "選 (2)。$48 \\div 6 = 8$。" },
+          { q: "若 $x : 24 = 3 : 8$，求 $x = ?$", ops: ["6", "8", "9", "12"], ans: "3", exp: "選 (3)。後項 $8 \\times 3 = 24 \\Rightarrow x = 3 \\times 3 = 9$。" }
+        ],
+        fill: [
+          { q: "將 180 質因數分解：$180 = $", ans: "2x2x3x3x5", note: "(連乘積)", exp: "$180 = 2 \\times 2 \\times 3 \\times 3 \\times 5$。" },
+          { q: "計算：(1) $5 \\frac{1}{4} \\div 1 \\frac{5}{16} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $9.1 \\div 0.13 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["4", "70"], multi: true, exp: "(1) $\\frac{21}{4} \\times \\frac{16}{21} = 4$；(2) $910 \\div 13 = 70$。" },
+          { q: "兩數相差 48，大數是小數的 5 倍。大數為 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，小數為 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["60", "12"], multi: true, exp: "小數 $48 \\div 4 = 12$，大數 $12 \\times 5 = 60$。" },
+          { q: "正五邊形每邊擺 4 顆棋子，角落都擺。共需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆棋子。", ans: ["15"], exp: "$5 \\times (4-1) = 15$ 顆。" },
+          { q: "最簡整數比：$1.25 : 1.5 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["5", "6"], multi: true, exp: "$125:150 = 5:6$。" }
+        ],
+        calc: [
+          { q: "求 $(40, 100)$ 與 $[40, 100]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["20", "200"], exp: "$(40, 100) = 20$，$[40, 100] = 200$。" },
+          { q: "計算 $4 \\frac{2}{3} \\div 1 \\frac{1}{6} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["4"], exp: "$\\frac{14}{3} \\times \\frac{6}{7} = 4$。" },
+          { q: "用直式計算：$17.1 \\div 0.38 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["45"], exp: "$1710 \\div 38 = 45$。" },
+          { q: "求 $x$：$3.6 : x = 0.9 : 2.5$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["10"], exp: "擴分4倍，故 $x = 2.5 \\times 4 = 10$。" }
+        ],
+        app: [
+          { q: "1. 筆 36 枝、橡皮擦 48 個平分給學生，最多分給幾人？每人分幾枝筆？", inputs: [{ label: "最多分給", id: "a0_1", unit: "人" }, { label: "每人筆", id: "a0_2", unit: "枝" }], ans: ["12", "3"], exp: "$(36, 48) = 12$ 人，筆 $36 \\div 12 = 3$ 枝。" },
+          { q: "2. 緞帶長 $7 \\frac{1}{2}$ 公尺，每 $\frac{5}{6}$ 公尺做一個蝴蝶結。可做幾個？剩幾公尺？", inputs: [{ label: "可做", id: "a1_1", unit: "個" }, { label: "剩", id: "a1_2", unit: "m" }], ans: ["9", "0"], exp: "$\\frac{15}{2} \\div \\frac{5}{6} = 9$ 個，剩 0 公尺。" },
+          { q: "3. 小明儲蓄是弟的 3 倍，兩人共 800 元。兩人各有幾元？", inputs: [{ label: "小明", id: "a2_1", unit: "元" }, { label: "弟弟", id: "a2_2", unit: "元" }], ans: ["600", "200"], exp: "弟弟 $800 \\div 4 = 200$ 元，小明 $200 \\times 3 = 600$ 元。" },
+          { q: "4. 地圖比例尺 $1 : 5000$，地圖上記得長 4 公分，實際距離是多少公分？等於多少公尺？", inputs: [{ label: "實際cm", id: "a3_1", unit: "cm" }, { label: "等於m", id: "a3_2", unit: "m" }], ans: ["20000", "200"], exp: "實際 $4 \\times 5000 = 20000$ cm $= 200$ m。" },
+          { q: "5. 水果 3.2 公斤售價 192 元。1公斤賣多少？買 5 公斤需多少元？", inputs: [{ label: "1公斤", id: "a4_1", unit: "元" }, { label: "5公斤", id: "a4_2", unit: "元" }], ans: ["60", "300"], exp: "1公斤：$192 \\div 3.2 = 60$ 元，5公斤：$60 \\times 5 = 300$ 元。" }
+        ]
+      },
+
+      // === 卷九 ===
+      {
+        id: 8,
+        title: "第 9 套模擬試卷 (卷九)",
+        mc: [
+          { q: "下列哪一個數是質數？", ops: ["51", "57", "59", "63"], ans: "3", exp: "選 (3)。59是質數。" },
+          { q: "計算 $\\frac{5}{6} \\div \\frac{5}{12} = ?$", ops: ["$\\frac{1}{2}$", "2", "$\\frac{25}{72}$", "3"], ans: "2", exp: "選 (2)。$\\frac{5}{6} \\times \\frac{12}{5} = 2$。" },
+          { q: "直線步道長 150m 一側每 10m 插旗，兩端都插，共需幾支？", ops: ["14 支", "15 支", "16 支", "17 支"], ans: "3", exp: "選 (3)。兩端都插：$150 \\div 10 + 1 = 16$ 支。" },
+          { q: "計算 $18.4 \\div 0.8 = ?$", ops: ["2.3", "23", "230", "0.23"], ans: "2", exp: "選 (2)。$184 \\div 8 = 23$。" },
+          { q: "若 $x : 18 = 5 : 6$，求 $x = ?$", ops: ["12", "15", "16", "20"], ans: "2", exp: "選 (2)。$6 \\times 3 = 18 \\Rightarrow x = 5 \\times 3 = 15$。" }
+        ],
+        fill: [
+          { q: "將 126 質因數分解：$126 = $", ans: "2x3x3x7", note: "(連乘積)", exp: "$126 = 2 \\times 3 \\times 3 \\times 7$。" },
+          { q: "計算：(1) $3 \\frac{3}{7} \\div 1 \\frac{1}{7} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $8.4 \\div 0.14 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["3", "60"], multi: true, exp: "(1) $\\frac{24}{7} \\times \\frac{7}{8} = 3$；(2) $840 \\div 14 = 60$。" },
+          { q: "甲乙兩數相差 50，甲是乙的 6 倍。甲為 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，乙為 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["60", "10"], multi: true, exp: "乙 $50 \\div 5 = 10$，甲 $10 \\times 6 = 60$。" },
+          { q: "空心正方形每邊 6 顆，共需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆棋子。", ans: ["20"], exp: "$4 \\times (6-1) = 20$ 顆。" },
+          { q: "最簡整數比：$0.36 : 0.48 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["3", "4"], multi: true, exp: "$36:48 = 3:4$。" }
+        ],
+        calc: [
+          { q: "求 $(56, 84)$ 與 $[56, 84]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["28", "168"], exp: "$(56, 84) = 28$，$[56, 84] = 168$。" },
+          { q: "計算 $6 \\frac{1}{4} \\div 2 \\frac{1}{12} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["3"], exp: "$\\frac{25}{4} \\times \\frac{12}{25} = 3$。" },
+          { q: "用直式計算：$16.8 \\div 0.24 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["70"], exp: "$1680 \\div 24 = 70$。" },
+          { q: "求 $x$：$4.5 : x = 1.5 : 4$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["12"], exp: "擴分3倍，故 $x = 4 \\times 3 = 12$。" }
+        ],
+        app: [
+          { q: "1. 蘋果 48 個與梨子 60 個平分禮盒，最多裝幾盒？每盒蘋果有幾個？", inputs: [{ label: "最多裝", id: "a0_1", unit: "盒" }, { label: "每盒蘋果", id: "a0_2", unit: "個" }], ans: ["12", "4"], exp: "$(48, 60) = 12$ 盒，蘋果 $48 \\div 12 = 4$ 個。" },
+          { q: "2. 麵粉 $6 \\frac{3}{4}$ 公斤，每 $\frac{3}{4}$ 公斤做一個派。可做幾個？剩幾公斤？", inputs: [{ label: "可做", id: "a1_1", unit: "個" }, { label: "剩", id: "a1_2", unit: "kg" }], ans: ["9", "0"], exp: "$\\frac{27}{4} \\div \\frac{3}{4} = 9$ 個，剩 0 kg。" },
+          { q: "3. 兩數之和為 210，大數是小數的 6 倍。兩數分別是多少？", inputs: [{ label: "大數", id: "a2_1", unit: "" }, { label: "小數", id: "a2_2", unit: "" }], ans: ["180", "30"], exp: "小數 $210 \\div 7 = 30$，大數 $30 \\times 6 = 180$。" },
+          { q: "4. 白糖與黑糖重量比 $2 : 3$，現有白糖 250 克，需黑糖多少克？共多少克？", inputs: [{ label: "黑糖", id: "a3_1", unit: "g" }, { label: "總重", id: "a3_2", unit: "g" }], ans: ["375", "625"], exp: "黑糖 $250 \\div 2 \\times 3 = 375$ g，總重 $250+375=625$ g。" },
+          { q: "5. 機器 2.4 小時生產 120 個零件。1小時生產幾個？生產 300 個需幾小時？", inputs: [{ label: "1小時生產", id: "a4_1", unit: "個" }, { label: "需要", id: "a4_2", unit: "小時" }], ans: ["50", "6"], exp: "1小時：$120 \\div 2.4 = 50$ 個，時間：$300 \\div 50 = 6$ 小時。" }
+        ]
+      },
+
+      // === 卷十 ===
+      {
+        id: 9,
+        title: "第 10 套模擬試卷 (卷十)",
+        mc: [
+          { q: "下列哪一個數屬於「合數」？", ops: ["41", "43", "47", "49"], ans: "4", exp: "選 (4)。$49 = 7 \\times 7$，為合數。" },
+          { q: "計算 $2 \\frac{1}{3} \\div 1 \\frac{1}{6} = ?$", ops: ["1", "2", "3", "4"], ans: "2", exp: "選 (2)。$\\frac{7}{3} \\times \\frac{6}{7} = 2$。" },
+          { q: "正方形跑道一圈 160m，每隔 8m 插旗，角落都插。需幾支旗？", ops: ["19 支", "20 支", "21 支", "22 支"], ans: "2", exp: "選 (2)。封閉路線：$160 \\div 8 = 20$ 支。" },
+          { q: "計算 $21.6 \\div 0.36 = ?$", ops: ["6", "60", "600", "0.6"], ans: "2", exp: "選 (2)。$2160 \\div 36 = 60$。" },
+          { q: "若 $A : 12 = 3 : 4$，求 $A = ?$", ops: ["6", "8", "9", "10"], ans: "3", exp: "選 (3)。$4 \\times 3 = 12 \\Rightarrow A = 3 \\times 3 = 9$。" }
+        ],
+        fill: [
+          { q: "將 200 質因數分解：$200 = $", ans: "2x2x2x5x5", note: "(連乘積)", exp: "$200 = 2 \\times 2 \\times 2 \\times 5 \\times 5$。" },
+          { q: "計算：(1) $4 \\frac{4}{5} \\div 1 \\frac{1}{5} = $ <input id='f1_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> (2) $9.6 \\div 0.16 = $ <input id='f1_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>", ans: ["4", "60"], multi: true, exp: "(1) $\\frac{24}{5} \\times \\frac{5}{6} = 4$；(2) $960 \\div 16 = 60$。" },
+          { q: "兩數和 140，大數比小數多 20。大數為 <input id='f2_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>，小數為 <input id='f2_2' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'>。", ans: ["80", "60"], multi: true, exp: "小數 $(140-20)\\div 2 = 60$，大數 $60+20=80$。" },
+          { q: "正六邊形每邊擺 4 顆棋子，角落都擺。共需 <input id='f3_1' class='math-input border-b-2 border-slate-400 w-16 text-indigo-700 font-bold'> 顆棋子。", ans: ["18"], exp: "$6 \\times (4-1) = 18$ 顆。" },
+          { q: "最簡整數比：$0.75 : 1.25 = $ <input id='f4_1' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'> : <input id='f4_2' class='math-input border-b-2 border-slate-400 w-10 text-indigo-700 font-bold'>", ans: ["3", "5"], multi: true, exp: "$75:125 = 3:5$。" }
+        ],
+        calc: [
+          { q: "求 $(60, 90)$ 與 $[60, 90]$。", inputs: [{ label: "最大公因數", id: "c0_1" }, { label: "最小公倍數", id: "c0_2" }], ans: ["30", "180"], exp: "$(60, 90) = 30$，$[60, 90] = 180$。" },
+          { q: "計算 $5 \\frac{1}{3} \\div 1 \\frac{1}{3} = ?$", inputs: [{ label: "答案", id: "c1_1" }], ans: ["4"], exp: "$\\frac{16}{3} \\times \\frac{3}{4} = 4$。" },
+          { q: "用直式計算：$22.5 \\div 0.45 = ?$", inputs: [{ label: "答案", id: "c2_1" }], ans: ["50"], exp: "$2250 \\div 45 = 50$。" },
+          { q: "求 $x$：$2.5 : 4 = 10 : x$", inputs: [{ label: "x =", id: "c3_1" }], ans: ["16"], exp: "擴分4倍，故 $x = 4 \\times 4 = 16$。" }
+        ],
+        app: [
+          { q: "1. 長 42cm、寬 28cm 的紙剪成最大相同正方形。邊長幾cm？可剪幾張？", inputs: [{ label: "邊長", id: "a0_1", unit: "cm" }, { label: "可剪", id: "a0_2", unit: "張" }], ans: ["14", "6"], exp: "邊長 $(42, 28) = 14$ cm，張數 $(42\\div 14)\\times(28\\div 14) = 6$ 張。" },
+          { q: "2. 果汁 $5 \\frac{5}{8}$ 公升，每 $\frac{3}{4}$ 公升倒滿一杯。可倒幾杯？剩幾公升？", inputs: [{ label: "可倒", id: "a1_1", unit: "杯" }, { label: "剩", id: "a1_2", unit: "L" }], ans: ["7", "3/8"], exp: "$\\frac{45}{8} \\div \\frac{3}{4} = 7 \\frac{1}{2}$，剩 $\\frac{3}{4} \\times \\frac{1}{2} = \\frac{3}{8}$ (或0.375) 公升。" },
+          { q: "3. 姊姊錢是妹妹的 5 倍，姊姊比妹妹多 400 元。兩人各有幾元？", inputs: [{ label: "姊姊", id: "a2_1", unit: "元" }, { label: "妹妹", id: "a2_2", unit: "元" }], ans: ["500", "100"], exp: "妹妹 $400 \\div 4 = 100$ 元，姊姊 $100 \\times 5 = 500$ 元。" },
+          { q: "4. 男女生比 $5 : 4$，男學生有 200 人，女學生有幾人？全校有幾人？", inputs: [{ label: "女學生", id: "a3_1", unit: "人" }, { label: "全校", id: "a3_2", unit: "人" }], ans: ["160", "360"], exp: "女學生 $200 \\div 5 \\times 4 = 160$ 人，全校 $200+160=360$ 人。" },
+          { q: "5. 布料 7.5 公尺做窗簾，每幅用 1.2 公尺。可做幾幅？剩幾公尺？", inputs: [{ label: "可做", id: "a4_1", unit: "幅" }, { label: "剩", id: "a4_2", unit: "m" }], ans: ["6", "0.3"], exp: "$7.5 \\div 1.2 = 6 \\dots 0.3$ 公尺。" }
+        ]
+      }
+    ];
+
+    // 當前運作狀態 (紀錄10張試卷各自的答題與得分)
+    let currentExamIndex = 0;
+    const userState = Array.from({ length: 10 }, () => ({
+      submitted: false,
+      score: 0,
+      inputs: {}
+    }));
+
+    // 初始化頁面
+    window.onload = function() {
+      initSelector();
+      renderExam(0);
+    };
+
+    // 初始化下拉選單
+    function initSelector() {
+      const selector = document.getElementById('examSelector');
+      selector.innerHTML = examDatabase.map((e, idx) => 
+        `<option value="${idx}">${e.title}</option>`
+      ).join('');
+    }
+
+    // 切換試卷
+    function changeExam(index) {
+      if (index < 0 || index >= examDatabase.length) return;
+      saveCurrentInputs();
+      currentExamIndex = index;
+      document.getElementById('examSelector').value = index;
+      renderExam(index);
+    }
+
+    function prevExam() {
+      if (currentExamIndex > 0) changeExam(currentExamIndex - 1);
+    }
+
+    function nextExam() {
+      if (currentExamIndex < examDatabase.length - 1) changeExam(currentExamIndex + 1);
+    }
+
+    // 保存目前頁面的輸入內容
+    function saveCurrentInputs() {
+      const state = userState[currentExamIndex].inputs;
+      document.querySelectorAll('#examContainer input').forEach(input => {
+        if (input.type === 'radio') {
+          if (input.checked) state[input.name] = input.value;
+        } else {
+          state[input.id] = input.value;
+        }
+      });
+    }
+
+    // 渲染指定試卷
+    function renderExam(index) {
+      const exam = examDatabase[index];
+      const state = userState[index];
+
+      // 更新按鈕狀態
+      document.getElementById('prevBtnHeader').disabled = (index === 0);
+      document.getElementById('nextBtnHeader').disabled = (index === examDatabase.length - 1);
+      document.getElementById('prevBtnFooter').disabled = (index === 0);
+      document.getElementById('nextBtnFooter').disabled = (index === examDatabase.length - 1);
+      document.getElementById('currentExamTitleDisplay').innerText = exam.title;
+
+      // 渲染得分看板狀態
+      const banner = document.getElementById('scoreBanner');
+      if (state.submitted) {
+        document.getElementById('bannerExamTitle').innerText = `${exam.title} 測驗成果`;
+        document.getElementById('totalScore').innerText = state.score;
+        document.getElementById('scoreComment').innerText = getScoreComment(state.score);
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // 建立 HTML
+      let html = `
+        <div class="border-b-2 border-slate-800 pb-4 mb-8">
+          <div class="text-center mb-4">
+            <h1 class="text-2xl font-black text-slate-900">國民小學 六年級第一學期 第一次評量模擬試題</h1>
+            <p class="text-sm font-bold text-indigo-600 mt-1">【${exam.title}】</p>
+            <p class="text-xs text-slate-500 mt-0.5">範圍：最大公因數與最小公倍數、分數除法、數量關係、小數除法、比與比值</p>
+          </div>
+          <div class="flex justify-between items-end text-sm font-semibold text-slate-700">
+            <div>姓名：<input type="text" id="studentName" value="${state.inputs['studentName'] || ''}" placeholder="請輸入姓名" class="no-print border-b-2 border-slate-400 outline-none px-2 py-0.5 w-32 font-normal"></div>
+            <div>總分：100 分</div>
+          </div>
+        </div>
+
+        <!-- 一、選擇題 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">一、 選擇題 (每題 3 分，共 15 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.mc.forEach((item, idx) => {
+        const qKey = `mc_${idx}`;
+        const userVal = state.inputs[qKey];
+        html += `
+          <div class="q-block p-4 rounded-xl border border-slate-100 transition" id="block_mc_${idx}">
+            <p class="font-semibold text-slate-800 mb-3">${idx + 1}. ${item.q}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm pl-2">
+              ${item.ops.map((op, oIdx) => `
+                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                  <input type="radio" name="${qKey}" value="${oIdx + 1}" ${userVal == (oIdx + 1) ? 'checked' : ''} class="w-4 h-4 text-indigo-600">
+                  (${oIdx + 1}) ${op}
+                </label>
+              `).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-emerald-50 text-emerald-900 rounded-lg text-sm border border-emerald-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 二、填填看 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">二、 填填看 (每格 3 分，共 30 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.fill.forEach((item, idx) => {
+        let inputField = '';
+        if (!item.multi) {
+          const val = state.inputs[`fill_${idx}`] || '';
+          inputField = `<input type="text" id="fill_${idx}" value="${val}" class="math-input border-b-2 border-slate-400 outline-none px-2 py-1 w-44 font-bold text-indigo-700"> ${item.note || ''}`;
+        } else {
+          inputField = item.q;
+        }
+
+        html += `
+          <div class="q-block p-4 rounded-xl border border-slate-100 transition" id="block_fill_${idx}">
+            <p class="font-medium text-slate-800">${idx + 1}. ${item.multi ? inputField : item.q + inputField}</p>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-emerald-50 text-emerald-900 rounded-lg text-sm border border-emerald-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 三、計算題 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">三、 計算題 (每題 5 分，共 20 分)</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      `;
+
+      exam.calc.forEach((item, idx) => {
+        html += `
+          <div class="q-block border border-slate-200 p-4 rounded-xl flex flex-col justify-between" id="block_calc_${idx}">
+            <p class="font-semibold text-slate-800">${idx + 1}. ${item.q}</p>
+            <div class="mt-4 pt-3 border-t border-slate-100 space-y-2 text-sm">
+              ${item.inputs.map((inp, iIdx) => {
+                const val = state.inputs[inp.id] || '';
+                return `<div>${inp.label}：<input type="text" id="${inp.id}" value="${val}" class="math-input border border-slate-300 rounded px-2 py-1 w-24 font-bold text-indigo-700"></div>`;
+              }).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-emerald-50 text-emerald-900 rounded-lg text-sm border border-emerald-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 四、應用題 -->
+        <section class="mb-6">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">四、 應用題 (每題 7 分，共 35 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.app.forEach((item, idx) => {
+        html += `
+          <div class="q-block p-4 border border-slate-200 rounded-xl transition" id="block_app_${idx}">
+            <p class="font-medium text-slate-800 mb-3">${item.q}</p>
+            <div class="bg-slate-50 p-3 rounded-lg flex flex-wrap gap-4 text-sm">
+              ${item.inputs.map(inp => {
+                const val = state.inputs[inp.id] || '';
+                return `<div>${inp.label}：<input type="text" id="${inp.id}" value="${val}" class="math-input border border-slate-300 rounded px-2 py-1 w-24 font-bold text-indigo-700"> ${inp.unit}</div>`;
+              }).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-emerald-50 text-emerald-900 rounded-lg text-sm border border-emerald-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section>`;
+
+      document.getElementById('examContainer').innerHTML = html;
+
+      // 如果該卷已經提交過，重新顯示對錯標示
+      if (state.submitted) {
+        evaluateCurrentExam(false);
+      }
+
+      // 重新渲染公式
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    // 比對字串工具
+    function clean(str) {
+      if (!str) return '';
+      return str.toString().trim().toLowerCase().replace(/\s+/g, '').replace(/✕/g, 'x').replace(/\*/g, 'x');
+    }
+
+    // 評分本卷
+    function submitExam() {
+      saveCurrentInputs();
+      userState[currentExamIndex].submitted = true;
+      const score = evaluateCurrentExam(true);
+      userState[currentExamIndex].score = score;
+      renderExam(currentExamIndex);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 執行分數計算與邊框標示
+    function evaluateCurrentExam(shouldAddScore) {
+      const exam = examDatabase[currentExamIndex];
+      let score = 0;
+
+      // 1. 選擇題 (15分)
+      exam.mc.forEach((item, idx) => {
+        const selected = document.querySelector(`input[name="mc_${idx}"]:checked`);
+        const block = document.getElementById(`block_mc_${idx}`);
+        const isCorrect = selected && selected.value === item.ans;
+        if (isCorrect) score += 3;
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 2. 填填看 (30分)
+      exam.fill.forEach((item, idx) => {
+        const block = document.getElementById(`block_fill_${idx}`);
+        let isCorrect = false;
+
+        if (!item.multi) {
+          const val = clean(document.getElementById(`fill_${idx}`)?.value);
+          isCorrect = (val === clean(item.ans));
+          if (isCorrect) score += 6;
+        } else {
+          // 多空格判斷
+          let correctCount = 0;
+          if (idx === 1) { // A, B
+            if (clean(document.getElementById('f1_1')?.value) === item.ans[0]) correctCount++;
+            if (clean(document.getElementById('f1_2')?.value) === item.ans[1]) correctCount++;
+          } else if (idx === 2) { // 計算
+            if (clean(document.getElementById('f2_1')?.value) === item.ans[0]) correctCount++;
+            if (clean(document.getElementById('f2_2')?.value) === item.ans[1]) correctCount++;
+          } else if (idx === 3) { // 規律
+            if (clean(document.getElementById('f3_1')?.value) === item.ans[0]) correctCount++;
+            const f3_2 = clean(document.getElementById('f3_2')?.value);
+            if (f3_2 === '3xn+1' || f3_2 === '3n+1' || f3_2 === '3*n+1') correctCount++;
+          } else if (idx === 4) { // 比
+            if (clean(document.getElementById('f4_1')?.value) === item.ans[0] && clean(document.getElementById('f4_2')?.value) === item.ans[1]) correctCount++;
+            if (clean(document.getElementById('f4_3')?.value) === item.ans[2] && clean(document.getElementById('f4_4')?.value) === item.ans[3]) correctCount++;
+          }
+          score += correctCount * 3;
+          isCorrect = (correctCount === item.ans.length / (idx === 4 ? 2 : 1));
+        }
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 3. 計算題 (20分)
+      exam.calc.forEach((item, idx) => {
+        const block = document.getElementById(`block_calc_${idx}`);
+        let correctCount = 0;
+        item.inputs.forEach((inp, iIdx) => {
+          const val = clean(document.getElementById(inp.id)?.value);
+          if (val === clean(item.ans[iIdx])) correctCount++;
+        });
+        const isCorrect = (correctCount === item.inputs.length);
+        if (isCorrect) score += 5;
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 4. 應用題 (35分)
+      exam.app.forEach((item, idx) => {
+        const block = document.getElementById(`block_app_${idx}`);
+        let correctCount = 0;
+        item.inputs.forEach((inp, iIdx) => {
+          const val = clean(document.getElementById(inp.id)?.value);
+          const expected = clean(item.ans[iIdx]);
+          if (val === expected || (expected.includes('/') && val === expected)) correctCount++;
+        });
+        const isCorrect = (correctCount === item.inputs.length);
+        if (isCorrect) score += 7;
+        setBlockStyle(block, isCorrect);
+      });
+
+      return score;
+    }
+
+    function setBlockStyle(block, isCorrect) {
+      if (!block) return;
+      block.classList.remove('bg-emerald-50/40', 'bg-rose-50/40', 'border-emerald-400', 'border-rose-400');
+      if (isCorrect) {
+        block.classList.add('bg-emerald-50/40', 'border', 'border-emerald-400');
+      } else {
+        block.classList.add('bg-rose-50/40', 'border', 'border-rose-400');
+      }
+    }
+
+    function getScoreComment(score) {
+      if (score === 100) return "太棒了！滿分 100 分！觀念非常紮實！";
+      if (score >= 80) return "表現優異！仔細檢視錯題解析，補強細節！";
+      if (score >= 60) return "順利及格！參考每題解題步驟，多加練習會更進步！";
+      return "再接再厲！重新閱讀解析算式後，點擊重作再試一次！";
+    }
+
+    // 重置本卷
+    function resetCurrentExam() {
+      if (!confirm(`確定要重置 ${examDatabase[currentExamIndex].title} 的答案嗎？`)) return;
+      userState[currentExamIndex] = { submitted: false, score: 0, inputs: {} };
+      renderExam(currentExamIndex);
+    }
+  </script>
+</body>
+</html>
+```eof
+
+### 💡 系統特點與使用說明：
+1. **單一檔案，好收納好使用**：只需將上方程式碼複製存為 `math_10sets.html`，點擊即可使用。
+2. **10 份試卷完全獨立**：
+   - 每份試卷包含 5 題選擇、5 題填空、4 題計算與 5 題應用題（滿分 100 分）。
+   - 切換頁面時會**自動保存每張卷的輸入結果**，不會因為切換試卷而丟失紀錄。
+3. **分頁切換**：
+   - 頁首與頁尾皆提供 **「上一頁」** 與 **「下一頁」** 按鈕，也可以透過下拉選單快速跳轉指定試卷（卷一 ~ 卷十）。
+4. **列印功能**：
+   - 點擊「列印本卷」時，系統會自動將頂部導覽列與交卷按鈕隱藏，直接輸出高品質考卷格式。
