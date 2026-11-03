@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國小六年級自然科 第一次段考模擬測驗題庫系統 (10套完整試卷)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .nature-input {
+      font-family: inherit;
+      text-align: center;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .exam-container { border: none !important; box-shadow: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+      .explanation-block { display: block !important; }
+      body { background-color: white !important; }
+    }
+  </style>
+</head>
+<body class="bg-emerald-50 min-h-screen p-3 md:p-8 text-slate-800 font-sans">
+
+  <!-- 頂部導覽與切換面板 -->
+  <header class="max-w-4xl mx-auto mb-6 bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-emerald-200 no-print">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="bg-teal-100 text-teal-800 text-xs font-bold px-3 py-1 rounded-full">南一版 第1~2單元</span>
+          <h1 class="text-xl font-bold text-slate-800">小六自然 段考模擬測驗題庫系統</h1>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">範圍：多樣的天氣變化、熱對物質的影響 [10套完整卷]</p>
+      </div>
+
+      <!-- 卷別切換區 -->
+      <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+        <button onclick="prevExam()" id="prevBtnHeader" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> 上一頁
+        </button>
+        
+        <select id="examSelector" onchange="changeExam(parseInt(this.value))" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-bold rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none">
+          <!-- 10張試卷選項由 JS 動態注入 -->
+        </select>
+
+        <button onclick="nextExam()" id="nextBtnHeader" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          下一頁 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 功能按鈕列 -->
+    <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
+      <div class="text-xs font-semibold text-slate-600">
+        當前檢視：<span id="currentExamTitleDisplay" class="text-teal-700 font-bold">卷一</span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="window.print()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> 列印本卷
+        </button>
+        <button onclick="resetCurrentExam()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> 重作本卷
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 得分統計看板 -->
+  <div id="scoreBanner" class="max-w-4xl mx-auto mb-6 bg-gradient-to-r from-teal-600 to-emerald-600 text-white p-6 rounded-2xl shadow-lg hidden no-print">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h2 class="text-2xl font-black" id="bannerExamTitle">卷一 測驗完成！</h2>
+        <p class="text-teal-100 text-sm mt-1" id="scoreComment">評語載入中...</p>
+      </div>
+      <div class="flex items-baseline gap-1 bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30">
+        <span class="text-5xl font-black" id="totalScore">0</span>
+        <span class="text-lg opacity-80">/ 100 分</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 試卷主體渲染區 -->
+  <main id="examContainer" class="exam-container max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-2xl shadow-md border border-slate-200">
+    <!-- JS 會在此載入對應試卷內容 -->
+  </main>
+
+  <!-- 底部導覽與交卷列 -->
+  <footer class="max-w-4xl mx-auto mt-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div class="flex gap-2 w-full md:w-auto">
+      <button onclick="prevExam()" id="prevBtnFooter" class="flex-1 md:flex-none px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> 上一頁
+      </button>
+      <button onclick="nextExam()" id="nextBtnFooter" class="flex-1 md:flex-none px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+        下一頁 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+
+    <button onclick="submitExam()" class="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-base rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      交卷對答案 (計算本卷得分)
+    </button>
+  </footer>
+
+  <script>
+    // -------------------------------------------------------------
+    // 10 份自然科試卷資料庫 (南一版六上自然 第一、二單元完整題型與解析)
+    // -------------------------------------------------------------
+    const examDatabase = [
+      // === 卷一 ===
+      {
+        id: 0,
+        title: "第 1 套模擬試卷 (卷一)",
+        mc: [
+          { q: "水蒸氣冷凝成小水滴附著於靠近地面或草木的物體表面，這種天氣現象稱為？", ops: ["雲", "霧", "露", "霜"], ans: "3", exp: "露是夜間地面氣溫下降，近地面的水蒸氣凝結附著於植物或物體表面的小水滴。" },
+          { q: "地面天氣圖上，符號『H』代表的是下列何種氣壓區？", ops: ["高氣壓", "低氣壓", "冷鋒", "暖鋒"], ans: "1", exp: "H（High）代表高氣壓中心，天氣通常較為晴朗乾燥。" },
+          { q: "冬天煮開水時，壺口附近的白色煙霧是由何者組成？", ops: ["水蒸氣", "水蒸氣冷凝成的小水滴", "二氧化碳", "空氣中的微塵"], ans: "2", exp: "水蒸氣是無色無味的氣體，我們眼睛看到的白煙其實是水蒸氣遇冷凝結成的小水滴。" },
+          { q: "金屬湯匙一端放入熱水瓶中，另一端不久後也會發熱，這主要是熱的哪種傳遞方式？", ops: ["對流", "傳導", "輻射", "蒸發"], ans: "2", exp: "熱在固體（如金屬）中，主要透過『熱傳導』方式由高溫處傳向低溫處。" },
+          { q: "熱水壺煮水時，熱水上升、冷水下降補充的熱傳遞方式稱為？", ops: ["對流", "傳導", "輻射", "折射"], ans: "1", exp: "熱對流發生於液體和氣體中，因受熱膨脹密度變小上升，冷流體下降補充。" }
+        ],
+        fill: [
+          { q: "當大氣溫度低於 $0^\circ\text{C}$ 時，空氣中的水蒸氣會直接凝華成冰晶附著在地面物體上，稱為 <input id='f0_0' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["霜"], exp: "霜是水蒸氣遇降至 $0^\circ\text{C}$ 以下的物體表面直接凝華產生的冰晶。" },
+          { q: "地面天氣圖中，冷空氣主動推進推擠暖空氣所形成的鋒面稱為 <input id='f1_0' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["冷鋒"], exp: "冷氣團向暖氣團移動時形成的交界面稱為冷鋒，常帶來降溫與陣雨。" },
+          { q: "太陽不需藉由任何介質即可將熱能傳播到地球，這種傳播方式稱為熱的 <input id='f2_0' class='nature-input border-b-2 border-slate-400 w-24 text-teal-800 font-bold'>。", ans: ["輻射"], exp: "熱輻射不需要物質作為傳遞介質，可在真空中傳播。" },
+          { q: "物質受熱時體積膨脹、遇冷時體積縮小的現象稱為 <input id='f3_0' class='nature-input border-b-2 border-slate-400 w-28 text-teal-800 font-bold'>。", ans: ["熱漲冷縮"], exp: "多數固體、液體和氣體都具有熱漲冷縮的特性。" },
+          { q: "水在自然界中以固態、液態和氣態三種型態不斷轉換循環，稱為 <input id='f4_0' class='nature-input border-b-2 border-slate-400 w-24 text-amber-800 font-bold'>。", ans: ["水循環"], exp: "水經由蒸發、凝結、降水等過程，在地球表面與大氣間循環不息。" }
+        ],
+        qa: [
+          { q: "1. 請簡述「雲」和「霧」的形成原理有何相似之處？兩者最主要的分界標準為何？", inputs: [{ label: "相似點與差異", id: "q0_0" }], ans: ["都是水蒸氣凝結成小水滴，雲在空中霧在地面"], exp: "雲與霧皆為水蒸氣遇冷凝結而成，懸浮於高空者稱為雲，飄浮於靠近地面者稱為霧。" },
+          { q: "2. 為何冬天鋪在鋪軌鐵路上的鋼軌之間必須留有細小的縫隙？", inputs: [{ label: "原因說明", id: "q1_0" }], ans: ["防止夏天受熱膨脹彎曲變形"], exp: "留有縫隙可預留夏天鐵軌受熱膨脹（熱漲）空間，避免鐵軌擠壓變形引起危險。" },
+          { q: "3. 夏天穿著白色衣服與黑色衣服站在陽光下，哪一種衣服會感覺較熱？為什麼？", inputs: [{ label: "結果與原因", id: "q2_0" }], ans: ["黑色，因為深色容易吸收熱輻射"], exp: "深色物體吸收熱輻射的能力較好、反射率低；淺色物體反射熱輻射能力較佳。" },
+          { q: "4. 請說明冷氣機為什麼通常安裝在房間上方高處？", inputs: [{ label: "原理說明", id: "q3_0" }], ans: ["吹出的冷空氣密度大下降，形成熱對流"], exp: "冷空氣較重會下沉，室內熱空氣上升，能快速達成室內對流循環與降溫。" }
+        ],
+        app: [
+          { q: "1. 觀察實驗：小明將冰塊放入乾淨的燒杯中，幾分鐘後發現燒杯「外壁」出現許許多多的水滴。請問這些水滴從何而來？屬於水的何種三態變化？", inputs: [{ label: "水滴來源", id: "a0_0", unit: "" }, { label: "三態變化", id: "a0_1", unit: "" }], ans: ["空氣中的水蒸氣遇冷凝結", "凝結"], exp: "杯外空氣中的水蒸氣碰到冰冷的杯壁，散熱凝結成液態小水滴。" },
+          { q: "2. 天氣預報判讀：若氣象局預報明日將有「冷鋒」通過臺灣，請預測臺灣地區的天氣變化（氣溫與降雨情況）。", inputs: [{ label: "氣溫變化", id: "a1_0", unit: "" }, { label: "降雨情況", id: "a1_1", unit: "" }], ans: ["氣溫下降轉冷", "出現陣雨或陰雨"], exp: "冷鋒通過時，冷空氣取代暖空氣，通常會帶來氣溫下降以及陰雨天氣。" },
+          { q: "3. 保溫瓶設計：保溫瓶內壁常有「鍍銀反射層」與「雙層真空層」，請問這兩者分別是阻絕了熱的哪種傳遞方式？", inputs: [{ label: "鍍銀層阻絕", id: "a2_0", unit: "" }, { label: "真空層阻絕", id: "a2_1", unit: "" }], ans: ["熱輻射", "傳導與對流"], exp: "光滑金屬鍍層能反射熱輻射；真空無物質介質可阻絕傳導與對流。" },
+          { q: "4. 生活科學思考：煮湯時使用「木製湯匙」和「金屬湯匙」，哪一個比較不容易燙手？請以熱的傳導性說明原因。", inputs: [{ label: "選用湯匙", id: "a3_0", unit: "" }, { label: "原因說明", id: "a3_1", unit: "" }], ans: ["木製湯匙", "木頭是熱的不良導體傳導速度慢"], exp: "木頭導熱性差（熱的不良導體），熱傳導速度遠慢於金屬。" }
+        ]
+      },
+
+      // === 卷二 ===
+      {
+        id: 1,
+        title: "第 2 套模擬試卷 (卷二)",
+        mc: [
+          { q: "空氣中的水蒸氣轉變成液態水或固態冰的過程，需要下列何種條件？", ops: ["吸收熱量（升溫）", "放出熱量（降溫）", "光照", "氣壓升高"], ans: "2", exp: "凝結、凝固與凝華（成冰）都需要散熱降溫才能發生。" },
+          { q: "滯留鋒面常在春末夏初於臺灣上空停留，帶來長時間陰雨，稱為？", ops: ["颱風季", "梅雨季", "旱季", "鞍型場"], ans: "2", exp: "冷暖氣團勢力相當形成的滯留鋒，會在五、六月為臺灣帶來持續降雨（梅雨季）。" },
+          { q: "水銀溫度計量測體溫時，水銀柱上升的原理是？", ops: ["水銀遇熱體積膨脹", "水銀質量增加", "水銀密度變大", "熱對流效果"], ans: "1", exp: "溫度計是利用液體熱漲冷縮的特性來測量溫度。" },
+          { q: "下列哪一種材質屬於「熱的良導體」？", ops: ["木頭", "塑膠", "不銹鋼", "保麗龍"], ans: "3", exp: "金屬類（如不銹鋼、銅、鋁）傳導熱的能力強，屬於熱的良導體。" },
+          { q: "冬天手握熱水袋時手感到溫暖，這主要是透過哪一種途徑傳遞熱？", ops: ["熱傳導", "熱對流", "熱輻射", "熱折射"], ans: "1", exp: "手與熱水袋直接接觸，熱量由熱水袋經傳導傳遞到手掌。" }
+        ],
+        fill: [
+          { q: "暖空氣主動推擠冷空氣推進所形成的鋒面稱為 <input id='f0_1' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["暖鋒"], exp: "暖鋒移動時暖空氣爬升於冷空氣之上，常帶來連續性降雨。" },
+          { q: "空氣受熱後體積膨脹，密度變小會上升；冷空氣密度大會下沉，這種流動稱為 <input id='f1_1' class='nature-input border-b-2 border-slate-400 w-24 text-teal-800 font-bold'>。", ans: ["熱對流"], exp: "流體因溫度差異導致密度不同，產生上下循環流動。" },
+          { q: "悶熱的夏天野外露營時，地表水蒸氣蒸發上升，高空遇冷快速凝結成大雨滴降下，稱為 <input id='f2_1' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["雨"], exp: "水蒸氣在高空凝結成小水滴，聚集成雲，變大後受重力落下形成雨。" },
+          { q: "乒乓球凹陷後放入熱水中會恢復原狀，是因為球內的 <input id='f3_1' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 受熱膨脹。", ans: ["空氣", "氣體"], exp: "氣體受熱後體積大幅膨脹，推擠球壁使凹陷恢復。" },
+          { q: "太陽能熱水器集熱板表面塗成黑色，是為了增加熱的 <input id='f4_1' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 吸收。", ans: ["輻射"], exp: "黑色物質能吸收較多的陽光熱輻射。" }
+        ],
+        qa: [
+          { q: "1. 請比較固體、液體和氣體三者在相同溫差下的「熱漲冷縮」程度大小排序。", inputs: [{ label: "膨脹程度排序", id: "q0_1" }], ans: ["氣體>液體>固體", "氣體大於液體大於固體"], exp: "受熱時，氣體體積膨脹最明顯，液體次之，固體膨脹程度最小。" },
+          { q: "2. 為何冬天暖氣機通常要安裝在房間的地面或較低處？", inputs: [{ label: "原因說明", id: "q1_1" }], ans: ["暖空氣密度小上升，能促進全室熱對流"], exp: "暖氣機產生的熱空氣較輕會往上升，帶動室內空氣對流使全室變暖。" },
+          { q: "3. 天氣圖上的等壓線密度很稀疏時，代表該區域的風速會有什麼特徵？", inputs: [{ label: "風速特徵", id: "q2_1" }], ans: ["風速較小或微風"], exp: "等壓線越密集代表氣壓差異大、風速越強；等壓線稀疏代表風速較小。" },
+          { q: "4. 請說明雨水落到地面後，是如何重新回到大氣中的？", inputs: [{ label: "過程說明", id: "q3_1" }], ans: ["吸收太陽熱能蒸發成水蒸氣"], exp: "地表水吸收熱能後蒸發變為水蒸氣上升至大氣中。" }
+        ],
+        app: [
+          { q: "1. 實作驗證：將裝滿紅墨水的玻璃瓶蓋上插有細玻璃管的橡皮塞，放入熱水中。請說明細管內水柱的高低變化及其原理。", inputs: [{ label: "水柱變化", id: "a0_2", unit: "" }, { label: "科學原理", id: "a0_3", unit: "" }], ans: ["水柱上升", "瓶內液體受熱膨漲"], exp: "瓶內液體受熱體積膨脹，只能往細管上升顯示。" },
+          { q: "2. 防災生活觀念：氣象局發布「颱風警報」時，颱風中心通常是高氣壓還是低氣壓？會帶來怎樣的天氣狀況？", inputs: [{ label: "氣壓性質", id: "a1_2", unit: "" }, { label: "天氣狀況", id: "a1_3", unit: "" }], ans: ["低氣壓", "強風狂吹與豪雨"], exp: "颱風是形成於熱帶海洋上的強烈低氣壓，會帶來狂風暴雨。" },
+          { q: "3. 材料應用：炒菜鍋的「鍋身」常用鐵或不銹鋼製作，而「柄把」常使用木頭或塑膠，請說明各自的選材原因。", inputs: [{ label: "鍋身選材原因", id: "a2_2", unit: "" }, { label: "柄把選材原因", id: "a2_3", unit: "" }], ans: ["熱的良導體快速傳熱炒熟食物", "熱的不良導體防止拿取時燙手"], exp: "金屬傳熱快適合烹調，塑膠/木頭隔熱佳保護手部。" },
+          { q: "4. 生活觀察：玻璃杯倒入沸水時，厚玻璃杯比薄玻璃杯容易破裂，請用「熱漲冷縮」原理說明原因。", inputs: [{ label: "破裂原因說明", id: "a3_2", unit: "" }], ans: ["厚玻璃內外壁受熱膨脹不均勻產生張力破裂"], exp: "玻璃是熱的不良導體，厚玻璃內壁受熱瞬間膨脹而外壁尚未傳熱，內外膨脹不均易推擠破裂。" }
+        ]
+      },
+
+      // === 卷三 ===
+      {
+        id: 2,
+        title: "第 3 套模擬試卷 (卷三)",
+        mc: [
+          { q: "高空中細小的冰晶受重力下落，若途經氣層溫度均低於 $0^\circ\text{C}$，落在地面上的固態降水稱為？", ops: ["雨", "霰", "雪", "露"], ans: "3", exp: "雪是高空冰晶下落過程中未融化，直接落到地面的六角形固態降水。" },
+          { q: "當冷氣團與暖氣團勢力相當、互不相讓時，形成的鋒面類型為？", ops: ["冷鋒", "暖鋒", "滯留鋒", "高壓鋒"], ans: "3", exp: "勢力相當的冷暖氣團交會處會形成滯留鋒，停留一段時間。" },
+          { q: "水在攝氏 4 度以上具有熱漲冷縮特性，若將 $20^\circ\text{C}$ 的水加熱到 $80^\circ\text{C}$，其質量與體積有何變化？", ops: ["質量不變，體積膨脹", "質量增加，體積膨脹", "質量不變，體積縮小", "質量減少，體積不變"], ans: "1", exp: "受熱時物質質量保持不變，但水體積會因熱膨脹而增大。" },
+          { q: "保溫便當盒能夠長時間維持飯菜溫度，主要是阻絕了熱的何種傳播方式？", ops: ["僅傳導", "僅對流", "傳導、對流與輻射", "僅輻射"], ans: "3", exp: "好的保溫容器會同時盡可能切斷傳導、對流與輻射三種熱散失途徑。" },
+          { q: "地面天氣圖上標示著許多曲線，將氣壓數值相同的各點連接起來的線稱為？", ops: ["等溫線", "等壓線", "鋒面線", "降雨線"], ans: "2", exp: "等壓線是用來表示各地氣壓分布狀況的曲線。" }
+        ],
+        fill: [
+          { q: "水蒸氣上升到高空，遇冷凝結成小水滴或凝華成小冰晶，大量聚積漂浮在空中稱為 <input id='f0_2' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["雲"], exp: "雲是懸浮在高空的小水滴或冰晶微粒微團。" },
+          { q: "氣溫降至冰點以下時，高空水蒸氣直接轉變成固態冰晶降落，稱為降 <input id='f1_2' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["雪"], exp: "冰晶直接降落即為雪。" },
+          { q: "金屬傳導熱量的速度快，稱為熱的 <input id='f2_2' class='nature-input border-b-2 border-slate-400 w-24 text-teal-800 font-bold'> 導體。", ans: ["良"], exp: "熱傳導良好的物質稱為熱的良導體。" },
+          { q: "高氣壓中心的空氣會下沉，天氣狀況通常較為 <input id='f3_2' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["晴朗", "好"], exp: "高壓中心盛行下沉氣流，不易形成雲雨，故天氣晴朗。" },
+          { q: "架設高壓電線時線路會稍微下垂留有餘裕，是為了防止冬天遇冷 <input id='f4_2' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 時拉斷電線。", ans: ["收縮", "冷縮"], exp: "防止冬天金屬電線冷縮拉緊而斷裂。" }
+        ],
+        qa: [
+          { q: "1. 請簡單描述「熱傳導」的傳遞特徵是什麼？主要發生在何種狀態的物質中？", inputs: [{ label: "傳導特徵與狀態", id: "q0_2" }], ans: ["由高溫傳向低溫，主要發生在固體"], exp: "熱傳導是熱由高溫部位傳遞至低溫部位，不需物質流動，主要在固體中進行。" },
+          { q: "2. 為何颱風來臨前，氣象局會提醒民眾做好防颱準備？颱風常帶來哪些災害？", inputs: [{ label: "災害類型", id: "q1_2" }], ans: ["強風吹倒樹木電桿，豪雨引發土石流淹水"], exp: "颱風帶來強風與豪雨，易導致淹水、土石流、樹木倒塌等嚴重災害。" },
+          { q: "3. 請問為什麼露營用的睡袋通常填充羽毛或棉花？這與熱的傳播有何關係？", inputs: [{ label: "原理說明", id: "q2_2" }], ans: ["羽毛棉花能鎖住空氣，空氣是熱的不良導體"], exp: "蓬鬆羽毛夾雜靜止空氣，空氣導熱極差，能有效減少人體熱量散失。" },
+          { q: "4. 請說明地面天氣圖中「L」標籤代表的氣壓區特徵與天氣影響。", inputs: [{ label: "低氣壓特徵", id: "q3_2" }], ans: ["低壓中心氣流上升，易成雲致雨天氣不佳"], exp: "L（Low）代表低氣壓，氣流上升容易凝結成雲雨，天氣多陰雨。" }
+        ],
+        app: [
+          { q: "1. 探究實驗：將蓋有氣球的小空瓶分別放入「冰水」與「熱水」中，請說明氣球體積的變化情形。", inputs: [{ label: "放入冰水時", id: "a0_4", unit: "" }, { label: "放入熱水時", id: "a0_5", unit: "" }], ans: ["氣球凹陷或變小", "氣球膨脹鼓起"], exp: "瓶內空氣遇冷收縮體積變小；受熱膨漲體積增大推鼓氣球。" },
+          { q: "2. 鋒面觀察：氣象圖上有一條帶有半圓形符號的線條，請指出這是什麼鋒面？其移動方向為何？", inputs: [{ label: "鋒面名稱", id: "a1_4", unit: "" }, { label: "符號凸出方向", id: "a1_5", unit: "" }], ans: ["暖鋒", "代表暖空氣移動方向"], exp: "半圓形符號代表暖鋒，半圓凸出的方向就是暖空氣推進的方向。" },
+          { q: "3. 綠建築思考：許多房屋屋頂塗上白色漆，或設置頂樓花園，主要目的是為了抵抗熱的哪兩種傳播途徑？", inputs: [{ label: "主要抵抗途徑", id: "a2_4", unit: "" }], ans: ["太陽熱輻射與熱傳導"], exp: "白色反射太陽熱輻射，綠化植物則阻絕太陽直射與熱傳導進入室內。" },
+          { q: "4. 實驗分析：取相同體積的熱水與冷水混合，最終水溫會高於熱水還是低於熱水？熱量是如何轉移的？", inputs: [{ label: "最終水溫特徵", id: "a3_4", unit: "" }, { label: "熱轉移方向", id: "a3_5", unit: "" }], ans: ["介於兩者之間(低於熱水高於冷水)", "熱量由熱水傳給冷水"], exp: "高溫熱水放出熱量降溫，低溫冷水吸收熱量升溫，達到熱平衡。" }
+        ]
+      },
+
+      // === 卷四 ===
+      {
+        id: 3,
+        title: "第 4 套模擬試卷 (卷四)",
+        mc: [
+          { q: "下列哪一種天氣現象發生的位置主要在「地面或草木物體表面上」，而非高空中？", ops: ["雨", "雲", "露", "雪"], ans: "3", exp: "露和霜發生於近地面物體表面，雲、雨、雪則於高空形成。" },
+          { q: "冷鋒過境臺灣時，下列哪一種天氣狀況「最不可能」發生？", ops: ["氣溫明顯下降", "颳風降雨", "氣溫急劇上升", "雲量增加"], ans: "3", exp: "冷鋒帶來冷空氣，會使氣溫明顯下降，不可能急劇上升。" },
+          { q: "加熱水壺底部時，整壺水逐漸變熱，這主要是透過哪一種熱傳播方式？", ops: ["熱傳導", "熱對流", "熱輻射", "熱折射"], ans: "2", exp: "水是液體，受熱時透過流體對流使整體溫度升高。" },
+          { q: "關於「熱的不良導體」之敘述，下列何者正確？", ops: ["完全不能傳導熱量", "傳導熱量的速度非常慢", "只能傳導冷氣", "受熱時絕不膨脹"], ans: "2", exp: "熱的不良導體（如木頭、塑膠、保麗龍）並非不能傳熱，而是傳熱速度極慢。" },
+          { q: "衛星雲圖上如果某個區域呈現一片濃厚的白色，代表該區域？", ops: ["天氣非常晴朗無雲", "雲層厚實降雨機率高", "地表溫度極高", "氣壓非常高"], ans: "2", exp: "衛星雲圖上的白色代表雲層，越亮越白代表雲層越厚越發達。" }
+        ],
+        fill: [
+          { q: "氣候預報中，氣壓的單位通常以百帕（<input id='f0_3' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>）表示。", ans: ["hPa", "hpa"], exp: "氣壓的國際標準單位為百帕（hPa）。" },
+          { q: "水蒸氣遇冷直接變成冰晶的過程稱為 <input id='f1_3' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["凝華"], exp: "氣態水蒸氣直接轉變為固態冰晶稱為凝華。" },
+          { q: "汽車引擎散熱器加裝許多散熱金屬片，是利用金屬為熱的 <input id='f2_3' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 導體來快速散熱。", ans: ["良"], exp: "利用金屬良導體及大表面積快速將熱量傳導出去。" },
+          { q: "加熱試管中的水時，應加熱試管 <input id='f3_3' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 部（上/中/下），才能利用對流讓整管水受熱。", ans: ["下", "底"], exp: "加熱底部能產生溫差引發受熱對流。" },
+          { q: "颱風是生成於熱帶海洋上的強烈 <input id='f4_3' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 氣壓系統。", ans: ["低"], exp: "颱風屬於熱帶低氣壓。" }
+        ],
+        qa: [
+          { q: "1. 請問高氣壓（H）與低氣壓（L）區域之間，風的流動方向通常是從哪裡吹向哪裡？", inputs: [{ label: "風向流動說明", id: "q0_3" }], ans: ["從高氣壓吹向低氣壓"], exp: "空氣由氣壓高的高壓區流向氣壓低的低壓區形成風。" },
+          { q: "2. 水蒸氣凝結成小水滴時，需要「放出熱量」還是「吸收熱量」？", inputs: [{ label: "熱量變化", id: "q1_3" }], ans: ["放出熱量(散熱)"], exp: "氣態變為液態為降溫過程，會放出熱量。" },
+          { q: "3. 為什麼保溫杯的雙層抽真空設計可以防止熱量散失？", inputs: [{ label: "原因說明", id: "q2_3" }], ans: ["真空沒有物質，無法進行傳導與對流"], exp: "傳導與對流都需要物質介質，真空狀態能完全阻絕這兩者。" },
+          { q: "4. 寒流來襲時，為什麼穿著多層薄衣服比穿一件厚衣服更保暖？", inputs: [{ label: "保暖原理", id: "q3_3" }], ans: ["多層衣服間保留較多靜止空氣隔絕熱傳導"], exp: "衣服層層夾縫中的空氣是不良導體，能留住體溫避免散失。" }
+        ],
+        app: [
+          { q: "1. 實驗現象分析：雙金屬片是由膨脹程度不同的兩片金屬複合而成。加熱後雙金屬片會向哪一側彎曲？", inputs: [{ label: "彎曲方向說明", id: "a0_6", unit: "" }], ans: ["向膨脹程度較小(較慢)的一側彎曲"], exp: "膨脹快的金屬長度變長較多，會推擠向膨脹慢的一側彎曲。" },
+          { q: "2. 鋒面符號識別：地面天氣圖上一條線上帶有三角形齒狀符號，請寫出這是何種鋒面？三角形指向何方？", inputs: [{ label: "鋒面名稱", id: "a1_6", unit: "" }, { label: "尖端指向", id: "a1_7", unit: "" }], ans: ["冷鋒", "指向冷空氣前進(暖空氣)的方向"], exp: "尖銳三角形符號代表冷鋒，尖端指向冷氣團移動方向。" },
+          { q: "3. 熱對流實作：在水缸右側放冰塊，左側放熱水，並在中間滴入紅墨水。請預測紅墨水在水中的流動循環方向。", inputs: [{ label: "流動方向說明", id: "a2_6", unit: "" }], ans: ["熱水側向上，冰塊側向下循環"], exp: "熱水側水受熱上升，冰塊側水受冷下沉，形成逆時鐘/順時鐘的對流循環。" },
+          { q: "4. 天氣現象比較：請比較「露」與「霜」在形成時的溫度條件差異。", inputs: [{ label: "露的溫度條件", id: "a3_6", unit: "" }, { label: "霜的溫度條件", id: "a3_7", unit: "" }], ans: ["高於0度", "低於0度"], exp: "露是水蒸氣於 $0^\circ\text{C}$ 以上凝結成水；霜是降至 $0^\circ\text{C}$ 以下凝華成冰晶。" }
+        ]
+      },
+
+      // === 卷五 ===
+      {
+        id: 4,
+        title: "第 5 套模擬試卷 (卷五)",
+        mc: [
+          { q: "水蒸氣在空中凝結成小水滴需要有附著核（如灰塵），這個附著核稱為？", ops: ["晶核", "凝結核", "水核", "氣核"], ans: "2", exp: "微小的灰塵或鹽粒等雜質可作為凝結核，幫助水蒸氣凝結。" },
+          { q: "下列哪一種物質受熱時，體積膨脹的效果最為顯著？", ops: ["鐵塊", "水", "空氣", "銅棒"], ans: "3", exp: "氣體（空氣）的熱漲冷縮膨脹幅度遠大於液體和固體。" },
+          { q: "冬天打羽毛球時，手感覺冰冷，摸到金屬拍框比摸握把布更冷，這是因為？", ops: ["金屬溫度比較低", "金屬傳導手熱量的速度比較快", "握把布會自動發熱", "金屬會吸收冷氣"], ans: "2", exp: "金屬是熱的良導體，會迅速把手上的熱量傳導出去，讓人感到特別冰冷。" },
+          { q: "臺灣五、六月間經常出現持續性降雨的梅雨季節，主要是受哪一種鋒面影響？", ops: ["冷鋒", "暖鋒", "滯留鋒", "颱風"], ans: "3", exp: "滯留鋒停留在臺灣上空，會帶來長時間的梅雨。" },
+          { q: "烤肉時將食物用鋁箔紙包起來加熱，鋁箔紙光滑亮面朝外或朝內會影響？", ops: ["吸收或反射熱輻射", "熱傳導速度增加百倍", "熱對流完全停止", "食物質量改變"], ans: "1", exp: "鋁箔亮面反射熱輻射能力強，霧面吸收熱輻射能力較好。" }
+        ],
+        fill: [
+          { q: "氣壓是指單位面積上所承受的 <input id='f0_4' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 重量。", ans: ["空氣"], exp: "氣壓即大氣壓力，為空氣柱重量所產生的壓力。" },
+          { q: "高空中的微小冰晶落下時，若途中溫度均高於 $0^\circ\text{C}$，融化後降落至地面即為 <input id='f1_4' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>。", ans: ["雨"], exp: "冰晶融化成水滴落下即為雨。" },
+          { q: "熱在液體與氣體中主要透過 <input id='f2_4' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 方式傳播。", ans: ["熱對流", "對流"], exp: "流體透過對流進行熱量傳遞。" },
+          { q: "鋪設人行道地磚時磚與磚之間留有縫隙，是為了防止夏天地磚受熱 <input id='f3_4' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 隆起。", ans: ["膨脹", "熱漲"], exp: "預留熱膨脹空間避免地磚擠壓隆起破裂。" },
+          { q: "太陽熱能傳到地球不需要介質，這種熱傳播方式稱為熱 <input id='f4_4' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["輻射"], exp: "輻射可在真空中傳播。" }
+        ],
+        qa: [
+          { q: "1. 請說明氣溫升高時，近地面空氣會如何運動？對氣壓會有什麼影響？", inputs: [{ label: "運動與氣壓變化", id: "q0_4" }], ans: ["空氣受熱膨脹上升，近地面氣壓變低"], exp: "空氣受熱膨脹變輕而上升，使地表單位面積空氣減少，形成低氣壓。" },
+          { q: "2. 為什麼在冰鎮飲料時，將冰塊放在飲料上方比放在下方冷卻效果更好？", inputs: [{ label: "原理說明", id: "q1_4" }], ans: ["上方冰水較冷較重會下沉形成對流"], exp: "上方受冷的水密度大會下沉，下方較溫暖的水上升，加速對流冷卻。" },
+          { q: "3. 請寫出雨水在自然界水循環中的三個主要階段名稱。", inputs: [{ label: "三個階段", id: "q2_4" }], ans: ["蒸發、凝結、降水"], exp: "水經蒸發成氣體、高空凝結成雲水滴、再以降水形式落回地面。" },
+          { q: "4. 暖瓶內膽塗銀光亮如鏡，請說明其科學原理與作用。", inputs: [{ label: "作用說明", id: "q3_4" }], ans: ["反射熱輻射減少熱量散失"], exp: "鏡面能將熱輻射反射回去，減少輻射造成的熱量流失。" }
+        ],
+        app: [
+          { q: "1. 氣象衛星雲圖判讀：若雲圖上臺灣東方海面有一個旋轉狀的強烈白色雲團，請問這通常是什麼天氣系統？會帶來什麼影響？", inputs: [{ label: "天氣系統名稱", id: "a0_8", unit: "" }, { label: "帶來影響", id: "a0_9", unit: "" }], ans: ["颱風", "強風豪雨"], exp: "旋轉狀濃密雲團為颱風，會帶來狂風暴雨。" },
+          { q: "2. 實驗探究：將一根玻璃棒與一根銅棒同時放入熱水中，5分鐘後用手摸兩棒頂端，哪一根會比較熱？為什麼？", inputs: [{ label: "比較結果", id: "a1_8", unit: "" }, { label: "原理說明", id: "a1_9", unit: "" }], ans: ["銅棒", "銅是熱的良導體傳熱快，玻璃是熱的不良導體"], exp: "金屬銅導熱性遠優於玻璃。" },
+          { q: "3. 氣球實驗探究：將吹氣氣球綁在空瓶口，放入冰水中氣球會縮小，請說明瓶內氣體分子的變化。", inputs: [{ label: "氣體分子變化", id: "a2_8", unit: "" }], ans: ["氣體遇冷體積收縮，密度變大"], exp: "氣體遇冷降溫時體積收縮，使氣球凹縮。" },
+          { q: "4. 生活應用：煮湯時浮在湯表面的油層可以保溫，請從熱傳播角度說明原理。", inputs: [{ label: "保溫原理", id: "a3_8", unit: "" }], ans: ["油層阻絕水蒸氣蒸發與熱對流散失"], exp: "油層覆蓋水面阻止水蒸氣蒸發吸熱，並阻隔水與空氣的對流散熱。" }
+        ]
+      },
+
+      // === 卷六 ===
+      {
+        id: 5,
+        title: "第 6 套模擬試卷 (卷六)",
+        mc: [
+          { q: "下列哪一種降水或水氣凝結現象，發生時大氣溫度必須在 $0^\circ\text{C}$ 以下？", ops: ["露", "雨", "霜", "霧"], ans: "3", exp: "霜是水蒸氣在 $0^\circ\text{C}$ 以下直接凝華成的冰晶。" },
+          { q: "在高空中形成雲的小水滴或冰晶，當體積增大到空氣浮力無法支撐時會落下形成？", ops: ["露", "霜", "雨或雪", "霧"], ans: "3", exp: "雲中水滴或冰晶變大受重力落下即為降水（雨或雪）。" },
+          { q: "冷氣機裝在高處、暖氣機裝在低處，這主要是應用熱的哪一種性質？", ops: ["熱傳導", "熱對流", "熱輻射", "熱折射"], ans: "2", exp: "冷空氣下沉、暖空氣上升，順應流體對流規律。" },
+          { q: "下列關於熱傳遞的敘述，何者「錯誤」？", ops: ["熱總是從高溫物體傳向低溫物體", "熱輻射不需要介質", "金屬是熱的不良導體", "液體主要靠對流傳熱"], ans: "3", exp: "金屬傳熱迅速，是熱的「良導體」。" },
+          { q: "氣象預報顯示明日有「高氣壓籠罩」，請問當天的天氣最可能是？", ops: ["狂風暴雨", "陰雨綿綿", "晴朗少雲", "大雪紛飛"], ans: "3", exp: "高氣壓中心盛行下沉氣流，天氣多晴朗乾爽。" }
+        ],
+        fill: [
+          { q: "水蒸氣遇冷凝結成小水滴飄浮在靠近地面的空氣中，稱為 <input id='f0_5' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>。", ans: ["霧"], exp: "近地面的微小水滴漂浮即為霧。" },
+          { q: "地面天氣圖上帶有半圓形與三角形交替出現的鋒面稱為 <input id='f1_5' class='nature-input border-b-2 border-slate-400 w-24 text-teal-800 font-bold'>。", ans: ["滯留鋒"], exp: "半圓與三角交替且方向相反者為滯留鋒。" },
+          { q: "物質受熱時質量保持不變，但 <input id='f2_5' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 會增加。", ans: ["體積"], exp: "熱漲冷縮改變的是體積而非質量。" },
+          { q: "保溫瓶的雙層真空構造可阻絕熱的傳導與 <input id='f3_5' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["對流"], exp: "真空狀態可防傳導與對流。" },
+          { q: "等壓線越密集的地方，代表氣壓差異大，該地區的 <input id='f4_5' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 越強。", ans: ["風速", "風"], exp: "等壓線密集代表氣壓梯度大，風力較強。" }
+        ],
+        qa: [
+          { q: "1. 請說明「傳導」與「對流」在傳遞熱量時的主要差異是什麼？", inputs: [{ label: "差異說明", id: "q0_5" }], ans: ["傳導不需要物質流動，對流需要流體流動"], exp: "傳導是分子間熱量遞傳無宏觀流動；對流需要液體或氣體流動轉移熱量。" },
+          { q: "2. 為什麼在寒冷的冬天，戶外的鐵凳子摸起來比木凳子冷許多？", inputs: [{ label: "原因說明", id: "q1_5" }], ans: ["鐵是熱的良導體，會迅速傳導走手部熱量"], exp: "兩者溫度相同，但鐵導熱快快速吸走手的熱量讓人感到冰冷。" },
+          { q: "3. 天氣圖上的「冷鋒」通過臺灣後，通常會帶來怎樣的天氣變化？", inputs: [{ label: "天氣變化", id: "q2_5" }], ans: ["氣溫下降降溫且伴隨陰雨"], exp: "冷鋒帶來冷空氣推擠暖空氣，使氣溫驟降並降雨。" },
+          { q: "4. 請說明水蒸氣、水與冰三者在型態上的主要差異。", inputs: [{ label: "三態差異", id: "q3_5" }], ans: ["水蒸氣為氣態，水為液態，冰為固態"], exp: "三者為水在不同溫度下展現的氣、液、固三態。" }
+        ],
+        app: [
+          { q: "1. 瓶塞實驗思考：玻璃瓶口塞著緊緊的木塞，若想輕鬆拔出木塞，應該加熱瓶口還是冷卻瓶口？請說明原理。", inputs: [{ label: "操作方法", id: "a0_10", unit: "" }, { label: "原理說明", id: "a0_11", unit: "" }], ans: ["加熱瓶口", "瓶口玻璃受熱膨脹變大鬆開木塞"], exp: "加熱使玻璃瓶口膨脹變大，孔徑變寬即可順利拔出木塞。" },
+          { q: "2. 氣候觀察：梅雨季節連日降雨，請寫出此時影響臺灣的主要鋒面類型及其符號特徵。", inputs: [{ label: "鋒面類型", id: "a1_10", unit: "" }, { label: "符號特徵", id: "a1_11", unit: "" }], ans: ["滯留鋒", "半圓形與三角形符號交替排列"], exp: "滯留鋒由冷暖氣團交會形成，符號為半圓與三角交替。" },
+          { q: "3. 保溫便當袋設計：保溫袋內層通常鋪有銀色鋁箔，這是利用了什麼原理來保溫？", inputs: [{ label: "原理說明", id: "a2_10", unit: "" }], ans: ["反射食物發出的熱輻射減少熱量散失"], exp: "亮面銀色鋁箔能反射熱輻射，維持便當溫度。" },
+          { q: "4. 水循環探究：請描述太陽在地球水循環過程中所扮演的角色。", inputs: [{ label: "太陽角色說明", id: "a3_10", unit: "" }], ans: ["提供熱能促使地表水蒸發"], exp: "太陽輻射提供驅動水循環蒸發過程所需的能量。" }
+        ]
+      },
+
+      // === 卷七 ===
+      {
+        id: 6,
+        title: "第 7 套模擬試卷 (卷七)",
+        mc: [
+          { q: "下列關於水蒸氣凝結成水滴的條件，何者「不必要」？", ops: ["溫度下降", "空氣中有凝結核", "要有強烈的陽光照射", "空氣相對濕度夠高"], ans: "3", exp: "凝結需要降溫與凝結核，陽光照射會促進蒸發而非凝結。" },
+          { q: "將冰水倒進玻璃杯中，杯子外壁會出現小水滴，這些水滴主要來自於？", ops: ["杯內的水滲透出來", "杯外空氣中的水蒸氣遇冷凝結", "冰塊融化溢出", "杯子材質產生水"], ans: "2", exp: "杯外空氣中的水蒸氣接觸冰冷杯壁散熱凝結成水滴。" },
+          { q: "雙手互相摩擦會感到發熱，這種現象屬於？", ops: ["熱傳導", "機械能摩擦轉化為熱能", "熱輻射", "熱對流"], ans: "2", exp: "摩擦力做功將動能轉化為熱能升溫。" },
+          { q: "冷氣團向暖氣團推進，並插到暖氣團下方推升暖氣團形成的鋒面稱為？", ops: ["冷鋒", "暖鋒", "滯留鋒", "靜止鋒"], ans: "1", exp: "冷氣團較重，移動時會插到暖氣團下方形成冷鋒。" },
+          { q: "太陽的熱量穿過無空氣的太空中傳到地球，主要依靠哪一種方式？", ops: ["熱傳導", "熱對流", "熱輻射", "熱折射"], ans: "3", exp: "真空無介質傳熱只能依靠熱輻射。" }
+        ],
+        fill: [
+          { q: "氣溫低於 $0^\circ\text{C}$ 時，空氣中的水蒸氣凝華附著在地面物體上形成的冰晶稱為 <input id='f0_6' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>。", ans: ["霜"], exp: "霜為低於零度時水蒸氣凝華之固態冰晶。" },
+          { q: "地面天氣圖中，『L』代表 <input id='f1_6' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 氣壓中心。", ans: ["低"], exp: "L 代表 Low 低氣壓。" },
+          { q: "金屬製品受熱時長度與體積會 <input id='f2_6' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>（膨脹/收縮）。", ans: ["膨脹", "熱漲"], exp: "金屬受熱膨脹。" },
+          { q: "保麗龍傳導熱的速度非常慢，屬於熱的 <input id='f3_6' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 導體。", ans: ["不良"], exp: "保麗龍內部含大量空氣，傳熱慢，為熱的不良導體。" },
+          { q: "高空中的雲主要由小水滴與小 <input id='f4_6' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'> 組成。", ans: ["冰晶"], exp: "雲包含水滴與冰晶。" }
+        ],
+        qa: [
+          { q: "1. 請說明「高氣壓」與「低氣壓」中心空氣垂直運動方向有何不同？", inputs: [{ label: "氣流運動說明", id: "q0_6" }], ans: ["高氣壓中心氣流下沉，低氣壓中心氣流上升"], exp: "高壓氣流下沉天氣晴，低壓氣流上升易成雲致雨。" },
+          { q: "2. 為什麼夏天穿黑色衣服容易感覺比穿白色衣服熱？", inputs: [{ label: "熱輻射原理", id: "q1_6" }], ans: ["黑色容易吸收陽光熱輻射，白色容易反射"], exp: "深色吸熱輻射多，淺色反射熱輻射多。" },
+          { q: "3. 請簡述熱水瓶瓶膽設計成雙層玻璃且中間抽真空的目的。", inputs: [{ label: "保溫目的", id: "q2_6" }], ans: ["阻絕熱傳導與熱對流以達到保溫效果"], exp: "無介質可完全阻止傳導與對流散熱。" },
+          { q: "4. 鋒面形成的根本原因是什麼？", inputs: [{ label: "形成原因", id: "q3_6" }], ans: ["冷氣團與暖氣團相遇交會"], exp: "性質不同（溫濕度差異大）的冷暖氣團相遇形成鋒面。" }
+        ],
+        app: [
+          { q: "1. 氣候預報分析：若明日台灣受強烈大陸冷氣團南下影響，預報圖上會出現哪種鋒面？天氣如何？", inputs: [{ label: "鋒面類型", id: "a0_12", unit: "" }, { label: "天氣預測", id: "a0_13", unit: "" }], ans: ["冷鋒", "氣溫驟降且有陣雨"], exp: "強烈冷氣團南下形成冷鋒，帶來降溫與陰雨。" },
+          { q: "2. 實驗現象探究：把裝滿水的玻璃瓶鎖緊瓶蓋後放進冷凍庫，結冰後玻璃瓶爆裂了。請用熱漲冷縮或水的特性說明原因。", inputs: [{ label: "爆裂原因說明", id: "a1_12", unit: "" }], ans: ["水結成冰時體積會膨脹變大推破玻璃"], exp: "水在結冰（$0^\circ\text{C}$）時體積反而會膨脹約10%，推破玻璃瓶。" },
+          { q: "3. 房屋設計探究：為何頂樓加蓋鐵皮屋夏天會非常炎熱？請提出一個改善降溫的方法。", inputs: [{ label: "炎熱原因", id: "a2_12", unit: "" }, { label: "改善方法", id: "a2_13", unit: "" }], ans: ["鐵皮容易吸收太陽熱輻射並快速傳導", "塗隔熱漆或綠化屋頂"], exp: "鐵皮為熱良導體吸收輻射傳入室內，塗白漆或植栽可隔熱。" },
+          { q: "4. 水三態變化實驗：在微波爐加熱水時，看到水滾沸產生大量氣泡上升，請說明氣泡內的成分是什麼？", inputs: [{ label: "氣泡成分", id: "a3_12", unit: "" }], ans: ["水蒸氣"], exp: "水沸騰時內部液態水快速汽化成氣態水蒸氣形成氣泡上升。" }
+        ]
+      },
+
+      // === 卷八 ===
+      {
+        id: 7,
+        title: "第 8 套模擬試卷 (卷八)",
+        mc: [
+          { q: "當我們看到氣象預報中的衛星雲圖，雲圖主要呈現的是？", ops: ["地表氣溫分佈", "地球上空雲層分佈與厚度", "風向與風速大小", "各地降水量累積"], ans: "2", exp: "衛星雲圖是透過氣象衛星拍攝記錄大氣雲層分佈狀況。" },
+          { q: "下列哪一種材質的杯子裝熱水時，最容易讓手感到燙？", ops: ["不銹鋼杯", "陶瓷杯", "雙層玻璃杯", "保麗龍杯"], ans: "1", exp: "金屬不銹鋼是熱的良導體，導熱速度最快最燙手。" },
+          { q: "冬天煮湯時，鍋蓋內側會附著許多水滴，這是水發生了什麼變化？", ops: ["蒸發", "凝結", "融化", "凝華"], ans: "2", exp: "湯滾產生的水蒸氣遇到較涼的鍋蓋內側，散熱凝結成液態水滴。" },
+          { q: "氣流由高氣壓區吹向低氣壓區，這種空氣的水平流動現象就是？", ops: ["雲", "雨", "風", "霧"], ans: "3", exp: "空氣受氣壓差驅動水平流動形成風。" },
+          { q: "下列關於熱對流的敘述，何者正確？", ops: ["只能在固體中進行", "冷流體會上升，熱流體會下沉", "熱流體密度小會上升", "不需要任何介質"], ans: "3", exp: "受熱流體膨漲密度變小而上升，冷流體密度大下沉。" }
+        ],
+        fill: [
+          { q: "冷空氣推進推擠暖空氣形成的鋒面稱為 <input id='f0_7' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["冷鋒"], exp: "冷氣團為主導形成冷鋒。" },
+          { q: "熱在固體中傳導的速度，金屬比非金屬 <input id='f1_7' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>（快/慢）。", ans: ["快"], exp: "金屬導熱速度快。" },
+          { q: "天氣圖上等壓線越密集，代表該區域的 <input id='f2_7' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 越大，風速越強。", ans: ["氣壓差", "氣壓差異"], exp: "等壓線密集代表氣壓梯度（氣壓差）大。" },
+          { q: "氣體受熱時體積膨脹，遇冷時體積 <input id='f3_7' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["收縮", "縮小"], exp: "熱漲冷縮現象。" },
+          { q: "水蒸氣是無色無味的 <input id='f4_7' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'> 態物質。", ans: ["氣"], exp: "水蒸氣為氣態。" }
+        ],
+        qa: [
+          { q: "1. 請說明「水蒸氣」與「小水滴」在肉眼觀察上的根本差異。", inputs: [{ label: "差異說明", id: "q0_7" }], ans: ["水蒸氣肉眼看不見，小水滴肉眼看得見"], exp: "氣態水蒸氣無色透明不可見；液態水滴散射光線肉眼可見。" },
+          { q: "2. 為何冬天穿羽絨衣能達到優良的保暖效果？", inputs: [{ label: "羽絨保暖原理", id: "q1_7" }], ans: ["羽絨能保留大量靜止空氣阻絕熱傳導"], exp: "羽絨結構能鎖住空氣，空氣為熱的不良導體可阻絕體溫散失。" },
+          { q: "3. 鋒面過境時通常會帶來什麼樣的天氣狀況？", inputs: [{ label: "天氣狀況", id: "q2_7" }], ans: ["雲量增多、降雨及氣溫轉變"], exp: "冷暖氣團交會交界面不穩定，常伴隨雲雨及氣溫變化。" },
+          { q: "4. 請簡述熱輻射傳播熱量時與熱傳導、熱對流的最大差別。", inputs: [{ label: "最大差別", id: "q3_7" }], ans: ["熱輻射完全不需要任何物質介質傳遞"], exp: "輻射可在真空中直接傳遞能量。" }
+        ],
+        app: [
+          { q: "1. 氣候題：颱風過境時常伴隨「強風豪雨」，請說明颱風中心的氣壓特徵。", inputs: [{ label: "氣壓特徵", id: "a0_14", unit: "" }], ans: ["中心為極低的低氣壓(L)"], exp: "颱風為強烈的熱帶低氣壓。" },
+          { q: "2. 實驗探究：將裝有紅墨水的微型瓶放入溫水中，玻璃管內水柱會上升，請寫出此實驗的目的。", inputs: [{ label: "實驗目的", id: "a1_14", unit: "" }], ans: ["觀察液體的熱漲冷縮現象"], exp: "透過細管觀察水受熱體積膨脹上升的現象。" },
+          { q: "3. 保溫杯設計：保溫杯內膽採用雙層真空設計，主要是為了阻絕哪兩種熱傳播途徑？", inputs: [{ label: "阻絕途徑", id: "a2_14", unit: "" }], ans: ["熱傳導與熱對流"], exp: "真空無物質可阻止傳導與對流。" },
+          { q: "4. 天氣現象探究：請說明清晨在草葉上看到的露珠是如何形成的？", inputs: [{ label: "形成過程", id: "a3_14", unit: "" }], ans: ["夜間近地面水蒸氣遇冷凝結成水滴附著於草葉上"], exp: "水蒸氣遇冷凝結附著於植物表面形成露。" }
+        ]
+      },
+
+      // === 卷九 ===
+      {
+        id: 8,
+        title: "第 9 套模擬試卷 (卷九)",
+        mc: [
+          { q: "地面天氣圖上標示的『H』與『L』，其基準是以？", ops: ["周圍區域相對氣壓高低決定", "絕對數值是否超過1000百帕決定", "地表高度決定", "氣溫高低決定"], ans: "1", exp: "高低氣壓是相對於周圍區域的氣壓高低來標示定義的。" },
+          { q: "下列哪一種現象是水蒸氣「凝華」而成的？", ops: ["露", "雨", "霜", "霧"], ans: "3", exp: "霜是水蒸氣在 $0^\circ\text{C}$ 以下直接轉變成冰晶（凝華）。" },
+          { q: "做實驗加熱液體時，使用酒精燈加熱燒杯底部，主要是利用何種方式使整體液體升溫？", ops: ["熱傳導", "熱對流", "熱輻射", "熱折射"], ans: "2", exp: "加熱底部引發液體的熱對流循環。" },
+          { q: "冬天的太陽曬在身上會感到溫暖，這主要是熱的哪一種傳播方式？", ops: ["熱傳導", "熱對流", "熱輻射", "熱蒸發"], ans: "3", exp: "太陽光傳遞熱能屬於熱輻射。" },
+          { q: "下列哪一種物質受熱時膨脹最少（體積變化最小）？", ops: ["空氣", "水", "銅棒", "氧氣"], ans: "3", exp: "同溫差下，固體（銅棒）熱漲冷縮的膨脹程度最小。" }
+        ],
+        fill: [
+          { q: "水蒸氣遇冷直接變成固態冰晶稱為 <input id='f0_8' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["凝華"], exp: "氣態直接變固態稱為凝華。" },
+          { q: "滯留鋒面常在 <input id='f1_8' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 季節（梅雨/秋颱）為臺灣帶來持續降雨。", ans: ["梅雨"], exp: "滯留鋒帶來梅雨。" },
+          { q: "金屬是熱的 <input id='f2_8' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'> 導體。", ans: ["良"], exp: "金屬傳熱快。" },
+          { q: "高氣壓區域的天氣狀況通常為 <input id='f3_8' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>（晴朗/陰雨）。", ans: ["晴朗"], exp: "高壓盛行下沉氣流天氣晴朗。" },
+          { q: "熱在真空中傳播的方式為熱 <input id='f4_8' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["輻射"], exp: "輻射不需要介質。" }
+        ],
+        qa: [
+          { q: "1. 請說明「雲」是如何形成的？", inputs: [{ label: "形成過程", id: "q0_8" }], ans: ["水蒸氣上升遇冷凝結成小水滴或冰晶聚積在高空"], exp: "水蒸氣高空遇冷凝結聚積成雲。" },
+          { q: "2. 木頭與鐵塊放在相同室溫下，用手摸鐵塊感覺較冰，為什麼？", inputs: [{ label: "原因說明", id: "q1_8" }], ans: ["鐵塊導熱快，迅速吸收手的熱量"], exp: "鐵為良導體傳熱速度快。" },
+          { q: "3. 氣壓高低與風的形成有何關係？", inputs: [{ label: "關係說明", id: "q2_8" }], ans: ["空氣從高氣壓區流向低氣壓區形成風"], exp: "氣壓差驅動空氣流動產生風。" },
+          { q: "4. 請說明冷氣機安裝在高處的科學原因。", inputs: [{ label: "科學原因", id: "q3_8" }], ans: ["冷空氣較重下沉形成熱對流循環降溫"], exp: "利用冷空氣下沉促進對流。" }
+        ],
+        app: [
+          { q: "1. 實作觀察：將滿裝水的試管頂部加熱，試管底部的水很久都不會熱，這說明了什麼？", inputs: [{ label: "說明結論", id: "a0_16", unit: "" }], ans: ["水是熱的不良導體且頂部加熱無法引發對流"], exp: "水導熱慢，且頂部熱水留在上方無法形成向下對流。" },
+          { q: "2. 鋒面識別：天氣圖上一條線標有半圓形符號，請寫出其名稱及移動特徵。", inputs: [{ label: "鋒面名稱", id: "a1_16", unit: "" }, { label: "移動特徵", id: "a1_17", unit: "" }], ans: ["暖鋒", "暖氣團主動向冷氣團推進"], exp: "半圓符號代表暖鋒。" },
+          { q: "3. 生活探究：冬天保溫杯裝熱水，如果杯蓋塗成黑色或白色，哪一種散熱較慢？為什麼？", inputs: [{ label: "選用顏色", id: "a2_16", unit: "" }, { label: "原因說明", id: "a2_17", unit: "" }], ans: ["白色", "白色反射輻射，發射熱輻射能力較弱散熱慢"], exp: "淺色/白色發射與吸收輻射能力均較弱。" },
+          { q: "4. 氣候探究：請說明大氣中水循環對地球環境的重要性。", inputs: [{ label: "重要性說明", id: "a3_16", unit: "" }], ans: ["提供陸地淡水資源並調節全球氣候"], exp: "水循環輸送淡水並維持生態平衡。" }
+        ]
+      },
+
+      // === 卷十 ===
+      {
+        id: 9,
+        title: "第 10 套模擬試卷 (卷十)",
+        mc: [
+          { q: "當我們打開熱水瓶倒水時，看到瓶口冒出的「白煙」，其本質是？", ops: ["水蒸氣", "水蒸氣遇冷凝結的小水滴", "二氧化碳", "空氣中的灰塵"], ans: "2", exp: "白煙是水蒸氣遇冷凝結成微小水滴的現象。" },
+          { q: "下列哪一種現象主要是利用「熱對流」原理？", ops: ["用烤箱烤麵包", "用冰塊冷卻整杯飲料", "手握暖暖包取暖", "曬太陽取暖"], ans: "2", exp: "冰塊放在飲料上方，冷流體下沉引發對流。" },
+          { q: "氣壓的單位為「百帕」，其英文縮寫標示為？", ops: ["hPa", "kg", "cm", "mmHg"], ans: "1", exp: "百帕英文標示為 hPa。" },
+          { q: "下列何者為「熱的不良導體」？", ops: ["鐵", "銅", "鋁", "塑膠"], ans: "4", exp: "塑膠傳導熱量極慢，為熱的不良導體。" },
+          { q: "冷鋒過境時，最不可能出現的天氣變化是？", ops: ["氣溫顯著下降", "出現陣雨", "氣溫急劇上升", "風向改變"], ans: "3", exp: "冷鋒帶來冷空氣使氣溫下降。" }
+        ],
+        fill: [
+          { q: "高空水蒸氣遇冷凝結成小水滴漂浮在空中稱為 <input id='f0_9' class='nature-input border-b-2 border-slate-400 w-16 text-teal-800 font-bold'>。", ans: ["雲"], exp: "雲懸浮於高空。" },
+          { q: "冷氣團插到暖氣團下方推進形成的鋒面稱為 <input id='f1_9' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["冷鋒"], exp: "冷氣團推進形成冷鋒。" },
+          { q: "物質受熱時體積膨脹，遇冷時體積收縮稱為 <input id='f2_9' class='nature-input border-b-2 border-slate-400 w-28 text-teal-800 font-bold'>。", ans: ["熱漲冷縮"], exp: "熱漲冷縮現象。" },
+          { q: "太陽熱能不需介質傳遞到地球的方式稱為熱 <input id='f3_9' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'>。", ans: ["輻射"], exp: "熱輻射可在真空中傳導。" },
+          { q: "地面天氣圖上，『H』代表 <input id='f4_9' class='nature-input border-b-2 border-slate-400 w-20 text-teal-800 font-bold'> 氣壓。", ans: ["高"], exp: "H 代表高氣壓。" }
+        ],
+        qa: [
+          { q: "1. 簡述「霜」與「露」在形成條件上的主要差異。", inputs: [{ label: "條件差異", id: "q0_9" }], ans: ["霜形成的溫度低於0度，露形成的溫度高於0度"], exp: "霜在零度以下凝華，露在零度以上凝結。" },
+          { q: "2. 說明為什麼烹飪用炒鍋的鍋身用金屬製造，而把手用木頭製造？", inputs: [{ label: "製造原理", id: "q1_9" }], ans: ["金屬為良導體快速傳熱，木頭為不良導體防止燙手"], exp: "金屬傳熱快，木頭隔熱防燙。" },
+          { q: "3. 風是如何產生的？請說明其與氣壓的關係。", inputs: [{ label: "風產生的原因", id: "q2_9" }], ans: ["空氣由高氣壓區流向低氣壓區產生風"], exp: "氣壓差帶動空氣流動形成風。" },
+          { q: "4. 請說明保溫瓶真空層的作用。", inputs: [{ label: "真空層作用", id: "q3_9" }], ans: ["阻絕熱的傳導與對流散失"], exp: "真空無介質可阻止傳導與對流。" }
+        ],
+        app: [
+          { q: "1. 探究實驗：將蓋有氣球的小瓶放入熱水中，氣球會膨脹，請說明原因。", inputs: [{ label: "原因說明", id: "a0_18", unit: "" }], ans: ["瓶內空氣受熱體積膨脹推鼓氣球"], exp: "氣體熱漲冷縮體積膨脹。" },
+          { q: "2. 氣象分析：若臺灣正受滯留鋒影響，請說明預測的天氣狀況。", inputs: [{ label: "預測天氣", id: "a1_18", unit: "" }], ans: ["出現長時間陰雨或連日降雨(梅雨)"], exp: "滯留鋒帶來長天數降雨。" },
+          { q: "3. 生活思考：穿著黑色衣服與白色衣服站在大太陽下，哪一種衣服吸熱較快？", inputs: [{ label: "比較結果", id: "a2_18", unit: "" }], ans: ["黑色衣服"], exp: "深色物體吸收熱輻射能力強。" },
+          { q: "4. 探究實作：請說明暖氣機應該安裝在房間上方還是下方？為什麼？", inputs: [{ label: "安裝位置", id: "a3_18", unit: "" }, { label: "原因說明", id: "a3_19", unit: "" }], ans: ["下方", "暖空氣較輕上升能形成對流循環"], exp: "暖空氣密度小上升形成熱對流。" }
+        ]
+      }
+    ];
+
+    // 當前運作狀態 (紀錄10張試卷各自的答題與得分)
+    let currentExamIndex = 0;
+    const userState = Array.from({ length: 10 }, () => ({
+      submitted: false,
+      score: 0,
+      inputs: {}
+    }));
+
+    // 初始化頁面
+    window.onload = function() {
+      initSelector();
+      renderExam(0);
+    };
+
+    // 初始化下拉選單
+    function initSelector() {
+      const selector = document.getElementById('examSelector');
+      selector.innerHTML = examDatabase.map((e, idx) => 
+        `<option value="${idx}">${e.title}</option>`
+      ).join('');
+    }
+
+    // 切換試卷
+    function changeExam(index) {
+      if (index < 0 || index >= examDatabase.length) return;
+      saveCurrentInputs();
+      currentExamIndex = index;
+      document.getElementById('examSelector').value = index;
+      renderExam(index);
+    }
+
+    function prevExam() {
+      if (currentExamIndex > 0) changeExam(currentExamIndex - 1);
+    }
+
+    function nextExam() {
+      if (currentExamIndex < examDatabase.length - 1) changeExam(currentExamIndex + 1);
+    }
+
+    // 保存目前頁面的輸入內容
+    function saveCurrentInputs() {
+      const state = userState[currentExamIndex].inputs;
+      document.querySelectorAll('#examContainer input').forEach(input => {
+        if (input.type === 'radio') {
+          if (input.checked) state[input.name] = input.value;
+        } else {
+          state[input.id] = input.value;
+        }
+      });
+    }
+
+    // 渲染指定試卷
+    function renderExam(index) {
+      const exam = examDatabase[index];
+      const state = userState[index];
+
+      // 更新按鈕狀態
+      document.getElementById('prevBtnHeader').disabled = (index === 0);
+      document.getElementById('nextBtnHeader').disabled = (index === examDatabase.length - 1);
+      document.getElementById('prevBtnFooter').disabled = (index === 0);
+      document.getElementById('nextBtnFooter').disabled = (index === examDatabase.length - 1);
+      document.getElementById('currentExamTitleDisplay').innerText = exam.title;
+
+      // 渲染得分看板狀態
+      const banner = document.getElementById('scoreBanner');
+      if (state.submitted) {
+        document.getElementById('bannerExamTitle').innerText = `${exam.title} 測驗成果`;
+        document.getElementById('totalScore').innerText = state.score;
+        document.getElementById('scoreComment').innerText = getScoreComment(state.score);
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // 建立 HTML
+      let html = `
+        <div class="border-b-2 border-teal-800 pb-4 mb-8">
+          <div class="text-center mb-4">
+            <h1 class="text-2xl font-black text-slate-900">國民小學 六年級第一學期 自然科評量模擬試題</h1>
+            <p class="text-sm font-bold text-teal-700 mt-1">【${exam.title}】</p>
+            <p class="text-xs text-slate-500 mt-0.5">範圍：第一單元 多樣的天氣變化 ＆ 第二單元 熱對物質的影響 (南一版)</p>
+          </div>
+          <div class="flex justify-between items-end text-sm font-semibold text-slate-700">
+            <div>姓名：<input type="text" id="studentName" value="${state.inputs['studentName'] || ''}" placeholder="請輸入姓名" class="no-print border-b-2 border-slate-400 outline-none px-2 py-0.5 w-32 font-normal"></div>
+            <div>總分：100 分</div>
+          </div>
+        </div>
+
+        <!-- 一、單選題 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">一、 單選題 (每題 4 分，共 20 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.mc.forEach((item, idx) => {
+        const qKey = `mc_${idx}`;
+        const userVal = state.inputs[qKey];
+        html += `
+          <div class="q-block p-4 rounded-xl border border-slate-100 transition" id="block_mc_${idx}">
+            <p class="font-semibold text-slate-800 mb-3">${idx + 1}. ${item.q}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm pl-2">
+              ${item.ops.map((op, oIdx) => `
+                <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                  <input type="radio" name="${qKey}" value="${oIdx + 1}" ${userVal == (oIdx + 1) ? 'checked' : ''} class="w-4 h-4 text-teal-600">
+                  (${oIdx + 1}) ${op}
+                </label>
+              `).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-teal-50 text-teal-900 rounded-lg text-sm border border-teal-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 二、填空題 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">二、 填空題 (每題 6 分，共 30 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.fill.forEach((item, idx) => {
+        html += `
+          <div class="q-block p-4 rounded-xl border border-slate-100 transition" id="block_fill_${idx}">
+            <p class="font-medium text-slate-800">${idx + 1}. ${item.q}</p>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-teal-50 text-teal-900 rounded-lg text-sm border border-teal-200">
+              <strong>解析：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 三、問答與觀念題 -->
+        <section class="mb-10">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">三、 問答與觀念題 (每題 6 分，共 24 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.qa.forEach((item, idx) => {
+        html += `
+          <div class="q-block border border-slate-200 p-4 rounded-xl flex flex-col justify-between" id="block_qa_${idx}">
+            <p class="font-semibold text-slate-800">${idx + 1}. ${item.q}</p>
+            <div class="mt-3 pt-3 border-t border-slate-100 space-y-2 text-sm">
+              ${item.inputs.map((inp) => {
+                const val = state.inputs[inp.id] || '';
+                return `<div>${inp.label}：<input type="text" id="${inp.id}" value="${val}" placeholder="輸入關鍵字答案" class="nature-input border border-slate-300 rounded px-3 py-1.5 w-full md:w-3/4 text-left font-bold text-teal-900"></div>`;
+              }).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-teal-50 text-teal-900 rounded-lg text-sm border border-teal-200">
+              <strong>完整解析與參考答案：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section><!-- 四、情境應用與探究題 -->
+        <section class="mb-6">
+          <h2 class="text-lg font-bold text-slate-900 border-b border-slate-300 pb-2 mb-6">四、 情境應用與探究題 (每題 6.5 分，共 26 分)</h2>
+          <div class="space-y-6">
+      `;
+
+      exam.app.forEach((item, idx) => {
+        html += `
+          <div class="q-block p-4 border border-slate-200 rounded-xl transition" id="block_app_${idx}">
+            <p class="font-medium text-slate-800 mb-3">${idx + 1}. ${item.q}</p>
+            <div class="bg-slate-50 p-4 rounded-lg flex flex-col gap-3 text-sm">
+              ${item.inputs.map(inp => {
+                const val = state.inputs[inp.id] || '';
+                return `<div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="font-semibold text-slate-700 min-w-[120px]">${inp.label}：</span>
+                  <input type="text" id="${inp.id}" value="${val}" placeholder="請簡答..." class="nature-input border border-slate-300 rounded px-3 py-1.5 flex-1 text-left font-bold text-teal-900">
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="explanation-block ${state.submitted ? '' : 'hidden'} mt-3 p-3 bg-teal-50 text-teal-900 rounded-lg text-sm border border-teal-200">
+              <strong>解析與引導：</strong>${item.exp}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div></section>`;
+
+      document.getElementById('examContainer').innerHTML = html;
+
+      // 【重要修復】重新填入填空題 (fill) 之前已儲存的答案
+      exam.fill.forEach((_, idx) => {
+        const inputElem = document.getElementById(`f${idx}_${index}`);
+        if (inputElem && state.inputs[inputElem.id] !== undefined) {
+          inputElem.value = state.inputs[inputElem.id];
+        }
+      });
+
+      // 如果該卷已經提交過，重新顯示對錯標示
+      if (state.submitted) {
+        evaluateCurrentExam(false);
+      }
+    }
+
+    // 比對字串工具 (清理空格與符號)
+    function clean(str) {
+      if (!str) return '';
+      return str.toString().trim().toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[，。；：,.;:]/g, '');
+    }
+
+    // 評分本卷
+    function submitExam() {
+      saveCurrentInputs();
+      userState[currentExamIndex].submitted = true;
+      const score = evaluateCurrentExam(true);
+      userState[currentExamIndex].score = score;
+      renderExam(currentExamIndex);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 執行分數計算與邊框標示
+    function evaluateCurrentExam(shouldAddScore) {
+      const exam = examDatabase[currentExamIndex];
+      let score = 0;
+
+      // 1. 單選題 (20分)
+      exam.mc.forEach((item, idx) => {
+        const selected = document.querySelector(`input[name="mc_${idx}"]:checked`);
+        const block = document.getElementById(`block_mc_${idx}`);
+        const isCorrect = selected && selected.value === item.ans;
+        if (isCorrect) score += 4;
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 2. 填空題 (30分)
+      exam.fill.forEach((item, idx) => {
+        const block = document.getElementById(`block_fill_${idx}`);
+        const inputElem = document.getElementById(`f${idx}_${currentExamIndex}`);
+        const userVal = clean(inputElem ? inputElem.value : '');
+        const isCorrect = item.ans.some(ansOpt => userVal.includes(clean(ansOpt)));
+        if (isCorrect) score += 6;
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 3. 問答觀念題 (24分)
+      exam.qa.forEach((item, idx) => {
+        const block = document.getElementById(`block_qa_${idx}`);
+        let correctCount = 0;
+        item.inputs.forEach((inp) => {
+          const userVal = clean(document.getElementById(inp.id)?.value);
+          if (item.ans.some(ansOpt => userVal.includes(clean(ansOpt)) || clean(ansOpt).includes(userVal))) {
+            if (userVal.length >= 1) correctCount++;
+          }
+        });
+        const isCorrect = (correctCount > 0);
+        if (isCorrect) score += 6;
+        setBlockStyle(block, isCorrect);
+      });
+
+      // 4. 情境應用題 (26分 - 每題 6.5分)
+      exam.app.forEach((item, idx) => {
+        const block = document.getElementById(`block_app_${idx}`);
+        let matchCount = 0;
+        item.inputs.forEach((inp) => {
+          const userVal = clean(document.getElementById(inp.id)?.value);
+          if (item.ans.some(ansOpt => userVal.includes(clean(ansOpt)) || clean(ansOpt).includes(userVal))) {
+            if (userVal.length >= 1) matchCount++;
+          }
+        });
+        const isCorrect = (matchCount > 0);
+        if (isCorrect) score += 6.5;
+        setBlockStyle(block, isCorrect);
+      });
+
+      return Math.round(score);
+    }
+
+    function setBlockStyle(block, isCorrect) {
+      if (!block) return;
+      block.classList.remove('bg-teal-50/40', 'bg-rose-50/40', 'border-teal-400', 'border-rose-400');
+      if (isCorrect) {
+        block.classList.add('bg-teal-50/40', 'border', 'border-teal-400');
+      } else {
+        block.classList.add('bg-rose-50/40', 'border', 'border-rose-400');
+      }
+    }
+
+    function getScoreComment(score) {
+      if (score === 100) return "太厲害了！滿分 100 分！對於天氣變化與熱學原理完全掌握！";
+      if (score >= 80) return "表現非常優秀！觀念相當清楚，對照錯題解析複習能更上層樓！";
+      if (score >= 60) return "順利及格！建議詳讀錯題的綠色解析，加強記憶天氣與熱漲冷縮的原理！";
+      return "再接再厲！請詳細閱讀每題的解答與科學觀念解析，點擊重作可以再試一次！";
+    }
+
+    // 重置本卷
+    function resetCurrentExam() {
+      if (!confirm(`確定要重置 ${examDatabase[currentExamIndex].title} 的答案嗎？`)) return;
+      userState[currentExamIndex] = { submitted: false, score: 0, inputs: {} };
+      renderExam(currentExamIndex);
+    }
+  </script>
+</body>
+</html>
+```eof
+
+### 特色與修復重點：
+1. **已修正填空題儲存邏輯**：特別加入了填空題輸入框答案回填（Repopulate）的機制，交卷對答案後**填空題答案會完整保留**，不會消失。
+2. **完整範圍涵蓋**：包含 10 套南一版六上自然科試卷（第一單元「多樣的天氣變化」與第二單元「熱對物質的影響」）。
+3. **豐富題型與自動對答案**：單選題、填空題、問答觀念題、情境探究題皆包含標準答案與詳細的科學原理解析，並會即時計算總分（滿分100分）。
