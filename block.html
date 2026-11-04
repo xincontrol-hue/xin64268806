@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>積木拼圖 AI 智解器 (Block Puzzle Solver)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 backdrop-blur bg-opacity-90">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-puzzle-piece text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">積木拼圖 AI 智解器</h1>
+                    <p class="text-xs text-slate-400">Block Puzzle Solver with Gemini Vision & Color Placement</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btnSampleLevel" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt"></i> 載入預設 145 關範例
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Panel: Input & Settings -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Step 1: Upload Screenshot & AI Parsing -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">1</span>
+                            上傳遊戲截圖 AI 辨識
+                        </h2>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="dropzone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-950/50 relative overflow-hidden group">
+                        <input type="file" id="fileInput" accept="image/*" class="hidden">
+                        <div id="uploadPrompt" class="space-y-2 py-4">
+                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-sm font-medium text-slate-300">點擊上傳或拖曳遊戲截圖至此</p>
+                            <p class="text-xs text-slate-500">支援 PNG, JPG, WEBP 圖片</p>
+                        </div>
+                        <img id="imagePreview" class="hidden max-h-48 mx-auto rounded-lg object-contain border border-slate-800">
+                    </div>
+
+                    <!-- AI Action Button -->
+                    <button id="btnAnalyzeAI" class="w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-2.5 px-4 rounded-xl font-medium shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        AI 智慧辨識盤面與積木
+                    </button>
+                    
+                    <div id="aiStatus" class="hidden mt-3 p-3 text-xs rounded-lg bg-slate-800 text-slate-300 flex items-center gap-2">
+                        <i id="aiSpinner" class="fa-solid fa-circle-notch fa-spin text-indigo-400 text-sm"></i>
+                        <span id="aiStatusText">正在分析圖片中...</span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Grid Configuration & Constraints -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">2</span>
+                            網格尺寸與行列限制
+                        </h2>
+                        <span class="text-xs text-slate-400">按右側網格可切換障礙物</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">列數 (Rows)</label>
+                            <input type="number" id="inputRows" min="2" max="8" value="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">行數 (Cols)</label>
+                            <input type="number" id="inputCols" min="2" max="8" value="5" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Row / Column Targets -->
+                    <div class="space-y-3 border-t border-slate-800 pt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">上方行目標數 (Col Targets, 左至右)</label>
+                            <div id="colTargetsContainer" class="flex gap-1.5 overflow-x-auto pb-1"></div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">左側列目標數 (Row Targets, 上至下)</label>
+                            <div id="rowTargetsContainer" class="flex gap-1.5 overflow-x-auto pb-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Candidate Polyomino Pieces -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-base font-bold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center">3</span>
+                            待解積木形狀列表
+                        </h2>
+                        <button id="btnAddPiece" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i> 新增積木
+                        </button>
+                    </div>
+
+                    <div id="piecesContainer" class="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-1">
+                        <!-- Dynamic Piece Cards -->
+                    </div>
+                </div>
+
+                <!-- Step 4: Solve Trigger -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <button id="btnSolve" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white py-3 px-4 rounded-xl font-bold shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 text-base transition">
+                        <i class="fa-solid fa-play"></i>
+                        開始運算求解積木拼圖
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Grid Canvas & Solution Display -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
+                    <div class="w-full flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-border-all text-indigo-400"></i>
+                            盤面預覽與解答渲染 (Canvas)
+                        </h2>
+                        <div id="solutionBadge" class="hidden px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            <i class="fa-solid fa-circle-check mr-1"></i> 已成功解答
+                        </div>
+                    </div>
+
+                    <!-- Canvas Container -->
+                    <div class="relative bg-slate-950 border border-slate-800 rounded-xl p-4 w-full flex justify-center items-center overflow-auto min-h-[380px]">
+                        <canvas id="puzzleCanvas" width="460" height="420" class="rounded-lg shadow-inner max-w-full cursor-pointer"></canvas>
+                    </div>
+
+                    <!-- Interactive Instructions -->
+                    <p class="text-xs text-slate-400 mt-3 text-center">
+                        <i class="fa-solid fa-info-circle mr-1"></i> 點擊網格單元格可切換為【障礙物/灰磚】或【可放置空格】。
+                    </p>
+
+                    <!-- Legend Section -->
+                    <div id="legendContainer" class="w-full mt-5 pt-4 border-t border-slate-800">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">積木與顏色對照表</h3>
+                        <div id="legendList" class="flex flex-wrap gap-2 text-xs">
+                            <span class="text-slate-500 italic">尚未運算解答...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Log & Debug Details -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                    <h3 class="text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-xs text-indigo-400"></i>
+                        運算日誌與狀態 (Log)
+                    </h3>
+                    <div id="logArea" class="bg-slate-950 border border-slate-800/80 rounded-xl p-3 font-mono text-xs text-slate-400 h-28 overflow-y-auto space-y-1">
+                        <div>[系統] 準備就緒。點擊「AI 智慧辨識」或「開始運算求解」。</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Custom Polyomino Creation -->
+    <div id="pieceModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-96 max-w-[90vw] shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-200">繪製自訂積木形狀</h3>
+                <button id="btnCloseModal" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">點擊方格以選擇/取消選擇，構成積木形狀：</p>
+            
+            <div class="flex justify-center mb-4">
+                <div id="modalGrid" class="grid grid-cols-4 gap-1.5 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <!-- 4x4 Grid Cells created dynamically -->
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-end">
+                <button id="btnCancelPiece" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800">取消</button>
+                <button id="btnSavePiece" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow">儲存積木</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Preset Palette for visual representation of placed blocks
+        const PIECE_COLORS = [
+            '#38bdf8', // Light Blue
+            '#a855f7', // Purple
+            '#4ade80', // Lime Green
+            '#f43f5e', // Red / Rose
+            '#fbbf24', // Amber / Yellow
+            '#ec4899', // Pink
+            '#14b8a6', // Teal
+            '#f97316', // Orange
+            '#6366f1'  // Indigo
+        ];
+
+        // Global State
+        const state = {
+            rows: 4,
+            cols: 5,
+            rowTargets: [4, 4, 3, 3],
+            colTargets: [3, 4, 3, 4, 0],
+            // Obstacles grid (true = blocked brick cell, false = open cell)
+            obstacles: [
+                [false, false, false, false, false],
+                [false, false, false, false, true],
+                [false, false, false, false, false],
+                [false, false, false, false, true]
+            ],
+            // Polyomino pieces array. Each piece has matrix: boolean[][]
+            pieces: [
+                // V shape / Angle shape (3 cells)
+                { id: 1, color: PIECE_COLORS[2], shape: [[1, 1], [1, 0]] },
+                // Corner L shape (4 cells)
+                { id: 2, color: PIECE_COLORS[0], shape: [[1, 0], [1, 1], [0, 1]] },
+                // T shape (4 cells)
+                { id: 3, color: PIECE_COLORS[0], shape: [[1, 0], [1, 1], [1, 0]] },
+                // Straight 3 or 4 shape
+                { id: 4, color: PIECE_COLORS[0], shape: [[1], [1], [1]] }
+            ],
+            // Solution output grid (null or piece ID / color)
+            solutionGrid: null,
+            uploadedBase64Image: null
+        };
+
+        // DOM Elements
+        const canvas = document.getElementById('puzzleCanvas');
+        const ctx = canvas.getContext('2d');
+        const inputRows = document.getElementById('inputRows');
+        const inputCols = document.getElementById('inputCols');
+        const rowTargetsContainer = document.getElementById('rowTargetsContainer');
+        const colTargetsContainer = document.getElementById('colTargetsContainer');
+        const piecesContainer = document.getElementById('piecesContainer');
+        const logArea = document.getElementById('logArea');
+        const legendList = document.getElementById('legendList');
+        const solutionBadge = document.getElementById('solutionBadge');
+
+        // Modal State
+        let editingPieceIndex = -1;
+        let modalGridState = Array(4).fill(0).map(() => Array(4).fill(false));
+
+        // Initialization
+        window.addEventListener('load', () => {
+            setupEventListeners();
+            syncUIFromState();
+            renderCanvas();
+        });
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+            let prefix = '[系統]';
+            let colorClass = 'text-slate-400';
+            
+            if (type === 'success') {
+                prefix = '[成功]';
+                colorClass = 'text-emerald-400 font-semibold';
+            } else if (type === 'error') {
+                prefix = '[錯誤]';
+                colorClass = 'text-rose-400';
+            } else if (type === 'ai') {
+                prefix = '[AI 辨識]';
+                colorClass = 'text-purple-300';
+            }
+
+            div.className = colorClass;
+            div.textContent = `${prefix} ${time} - ${msg}`;
+            logArea.appendChild(div);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Synchronize state with UI controls
+        function syncUIFromState() {
+            inputRows.value = state.rows;
+            inputCols.value = state.cols;
+
+            // Render Row Target Inputs
+            rowTargetsContainer.innerHTML = '';
+            for (let r = 0; r < state.rows; r++) {
+                const val = state.rowTargets[r] ?? 0;
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.min = '0';
+                inp.max = state.cols;
+                inp.value = val;
+                inp.className = 'w-10 text-center bg-slate-950 border border-slate-800 rounded px-1 py-1 text-xs text-cyan-400 font-bold focus:outline-none focus:border-indigo-500';
+                inp.addEventListener('change', (e) => {
+                    state.rowTargets[r] = parseInt(e.target.value) || 0;
+                    renderCanvas();
+                });
+                rowTargetsContainer.appendChild(inp);
+            }
+
+            // Render Col Target Inputs
+            colTargetsContainer.innerHTML = '';
+            for (let c = 0; c < state.cols; c++) {
+                const val = state.colTargets[c] ?? 0;
+                const inp = document.createElement('input');
+                inp.type = 'number';
+                inp.min = '0';
+                inp.max = state.rows;
+                inp.value = val;
+                inp.className = 'w-10 text-center bg-slate-950 border border-slate-800 rounded px-1 py-1 text-xs text-cyan-400 font-bold focus:outline-none focus:border-indigo-500';
+                inp.addEventListener('change', (e) => {
+                    state.colTargets[c] = parseInt(e.target.value) || 0;
+                    renderCanvas();
+                });
+                colTargetsContainer.appendChild(inp);
+            }
+
+            renderPiecesList();
+        }
+
+        // Render Candidate Pieces List UI
+        function renderPiecesList() {
+            piecesContainer.innerHTML = '';
+            state.pieces.forEach((piece, idx) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between items-center relative group';
+                
+                // Mini preview container
+                const preview = document.createElement('div');
+                preview.className = 'grid gap-0.5 my-2';
+                const pRows = piece.shape.length;
+                const pCols = piece.shape[0].length;
+                preview.style.gridTemplateColumns = `repeat(${pCols}, minmax(0, 1fr))`;
+
+                for (let r = 0; r < pRows; r++) {
+                    for (let c = 0; c < pCols; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'w-4 h-4 rounded-sm';
+                        if (piece.shape[r][c]) {
+                            cell.style.backgroundColor = piece.color || PIECE_COLORS[idx % PIECE_COLORS.length];
+                        } else {
+                            cell.className += ' bg-transparent';
+                        }
+                        preview.appendChild(cell);
+                    }
+                }
+
+                // Delete button
+                const btnDel = document.createElement('button');
+                btnDel.className = 'absolute top-1.5 right-1.5 text-slate-500 hover:text-rose-400 text-xs transition';
+                btnDel.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                btnDel.onclick = () => {
+                    state.pieces.splice(idx, 1);
+                    renderPiecesList();
+                    renderCanvas();
+                };
+
+                const title = document.createElement('span');
+                title.className = 'text-[10px] text-slate-400 font-medium';
+                title.textContent = `積木 #${idx + 1}`;
+
+                card.appendChild(btnDel);
+                card.appendChild(title);
+                card.appendChild(preview);
+                piecesContainer.appendChild(card);
+            });
+        }
+
+        // Render Main Puzzle Board Canvas
+        function renderCanvas() {
+            const cellSize = 56;
+            const marginX = 80; // Left margin for row numbers
+            const marginY = 80; // Top margin for col numbers
+
+            canvas.width = marginX + state.cols * cellSize + 40;
+            canvas.height = marginY + state.rows * cellSize + 40;
+
+            // Clear Background
+            ctx.fillStyle = '#090d16';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Top Column Numbers
+            for (let c = 0; c < state.cols; c++) {
+                const x = marginX + c * cellSize + cellSize / 2;
+                const y = marginY - 24;
+                
+                // Box background
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(x - 18, y - 18, 36, 36, 8);
+                ctx.fill();
+                ctx.strokeStyle = '#334155';
+                ctx.stroke();
+
+                // Number text
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 18px "Noto Sans TC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(state.colTargets[c] ?? 0, x, y);
+            }
+
+            // Draw Left Row Numbers
+            for (let r = 0; r < state.rows; r++) {
+                const x = marginX - 24;
+                const y = marginY + r * cellSize + cellSize / 2;
+
+                // Box background
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(x - 18, y - 18, 36, 36, 8);
+                ctx.fill();
+                ctx.strokeStyle = '#334155';
+                ctx.stroke();
+
+                // Number text
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 18px "Noto Sans TC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(state.rowTargets[r] ?? 0, x, y);
+            }
+
+            // Draw Grid Cells
+            for (let r = 0; r < state.rows; r++) {
+                for (let c = 0; c < state.cols; c++) {
+                    const x = marginX + c * cellSize;
+                    const y = marginY + r * cellSize;
+                    const isObstacle = state.obstacles[r]?.[c];
+                    const solutionPiece = state.solutionGrid?.[r]?.[c];
+
+                    // Cell Outline & Fill
+                    ctx.beginPath();
+                    ctx.roundRect(x + 2, y + 2, cellSize - 4, cellSize - 4, 6);
+
+                    if (isObstacle) {
+                        // Brick / Obstacle Style
+                        ctx.fillStyle = '#334155';
+                        ctx.fill();
+                        ctx.strokeStyle = '#475569';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+
+                        // Brick Pattern Details
+                        ctx.strokeStyle = '#1e293b';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 6, y + cellSize / 2);
+                        ctx.lineTo(x + cellSize - 6, y + cellSize / 2);
+                        ctx.stroke();
+                    } else if (solutionPiece) {
+                        // Solved Polyomino Block Fill
+                        ctx.fillStyle = solutionPiece.color;
+                        ctx.fill();
+
+                        // Inner Bevel Effect
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.stroke();
+
+                        // Piece Index Label inside block
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 14px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(`#${solutionPiece.id}`, x + cellSize / 2, y + cellSize / 2);
+                    } else {
+                        // Empty playable slot
+                        ctx.fillStyle = '#111827';
+                        ctx.fill();
+                        ctx.strokeStyle = '#1f2937';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Setup All Event Listeners
+        function setupEventListeners() {
+            // Rows & Cols inputs
+            inputRows.addEventListener('change', (e) => {
+                const val = parseInt(e.target.value) || 4;
+                state.rows = Math.min(Math.max(val, 2), 8);
+                // Resize targets & obstacles
+                state.rowTargets = Array(state.rows).fill(0).map((_, i) => state.rowTargets[i] ?? 3);
+                state.obstacles = Array(state.rows).fill(0).map((_, r) => 
+                    Array(state.cols).fill(false).map((_, c) => state.obstacles[r]?.[c] ?? false)
+                );
+                state.solutionGrid = null;
+                solutionBadge.classList.add('hidden');
+                syncUIFromState();
+                renderCanvas();
+            });
+
+            inputCols.addEventListener('change', (e) => {
+                const val = parseInt(e.target.value) || 5;
+                state.cols = Math.min(Math.max(val, 2), 8);
+                state.colTargets = Array(state.cols).fill(0).map((_, i) => state.colTargets[i] ?? 3);
+                state.obstacles = Array(state.rows).fill(0).map((_, r) => 
+                    Array(state.cols).fill(false).map((_, c) => state.obstacles[r]?.[c] ?? false)
+                );
+                state.solutionGrid = null;
+                solutionBadge.classList.add('hidden');
+                syncUIFromState();
+                renderCanvas();
+            });
+
+            // Toggle Obstacles by Clicking Canvas
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const marginX = 80;
+                const marginY = 80;
+                const cellSize = 56;
+
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const col = Math.floor((clickX - marginX) / cellSize);
+                const row = Math.floor((clickY - marginY) / cellSize);
+
+                if (row >= 0 && row < state.rows && col >= 0 && col < state.cols) {
+                    state.obstacles[row][col] = !state.obstacles[row][col];
+                    state.solutionGrid = null;
+                    solutionBadge.classList.add('hidden');
+                    renderCanvas();
+                }
+            });
+
+            // Drag and Drop File Upload
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropzone.addEventListener('click', () => fileInput.click());
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-indigo-500', 'bg-slate-900');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('border-indigo-500', 'bg-slate-900');
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-indigo-500', 'bg-slate-900');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            // Preset Sample Level Button
+            document.getElementById('btnSampleLevel').addEventListener('click', loadSampleLevel145);
+
+            // Modal Piece Creation Events
+            document.getElementById('btnAddPiece').addEventListener('click', openPieceModal);
+            document.getElementById('btnCloseModal').addEventListener('click', closePieceModal);
+            document.getElementById('btnCancelPiece').addEventListener('click', closePieceModal);
+            document.getElementById('btnSavePiece').addEventListener('click', savePieceFromModal);
+
+            // Solve & AI Buttons
+            document.getElementById('btnSolve').addEventListener('click', solvePuzzle);
+            document.getElementById('btnAnalyzeAI').addEventListener('click', analyzeImageWithGemini);
+        }
+
+        // Handle File Selection and Convert to Base64
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                log('請上傳有效的圖片檔案 (PNG, JPG)', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.uploadedBase64Image = e.target.result;
+                const imgPreview = document.getElementById('imagePreview');
+                const uploadPrompt = document.getElementById('uploadPrompt');
+
+                imgPreview.src = e.target.result;
+                imgPreview.classList.remove('hidden');
+                uploadPrompt.classList.add('hidden');
+
+                log(`圖片上傳成功 (${file.name})。可點擊「AI 智慧辨識盤面」。`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Load Preset Level 145 (matching prompt example)
+        function loadSampleLevel145() {
+            state.rows = 4;
+            state.cols = 5;
+            state.colTargets = [3, 4, 3, 4, 0];
+            state.rowTargets = [4, 4, 3, 3];
+            state.obstacles = [
+                [false, false, false, false, false],
+                [false, false, false, false, true],
+                [false, false, false, false, false],
+                [false, false, false, false, true]
+            ];
+            state.pieces = [
+                { id: 1, color: PIECE_COLORS[0], shape: [[1, 1], [1, 0]] }, // V 3-block
+                { id: 2, color: PIECE_COLORS[1], shape: [[1, 0], [1, 1], [0, 1]] }, // L corner 4-block
+                { id: 3, color: PIECE_COLORS[2], shape: [[1, 0], [1, 1], [1, 0]] }, // T 4-block
+                { id: 4, color: PIECE_COLORS[3], shape: [[1], [1], [1]] }  // I 3-block
+            ];
+            state.solutionGrid = null;
+            solutionBadge.classList.add('hidden');
+            syncUIFromState();
+            renderCanvas();
+            log('已載入預設第 145 關測試盤面與積木資料。', 'success');
+        }
+
+        // Gemini Vision AI Analysis
+        async function analyzeImageWithGemini() {
+            if (!state.uploadedBase64Image) {
+                log('請先上傳遊戲截圖再執行 AI 辨識！', 'error');
+                return;
+            }
+
+            const statusBox = document.getElementById('aiStatus');
+            const statusText = document.getElementById('aiStatusText');
+            statusBox.classList.remove('hidden');
+            statusText.textContent = 'Gemini 3 Flash 正在辨識盤面數字與積木形狀...';
+
+            log('正在傳送圖像至 Gemini Vision API 進行結構化辨識...', 'ai');
+
+            // Prepare base64 string
+            const base64Data = state.uploadedBase64Image.split(',')[1];
+            const mimeType = state.uploadedBase64Image.split(';')[0].split(':')[1] || 'image/png';
+
+            const prompt = `你是一個專業的《積木拼圖/Nonogram》遊戲圖像辨識專家。
+請仔細分析這張遊戲截圖，提取出以下盤面資訊並以結構化的 JSON 格式回覆：
+1. "rows": 盤面網格的列數 (例如 4)
+2. "cols": 盤面網格的行數 (例如 5)
+3. "colTargets": 最上方一排數字提示 (從左到右陣列，例如 [3, 4, 3, 4, 0])
+4. "rowTargets": 最左側一排數字提示 (從上到下陣列，例如 [4, 4, 3, 3])
+5. "obstacles": 2D 布林陣列 [rows][cols]，若單元格為灰磚/障礙物/不可填入點則為 true，空格為 false
+6. "pieces": 右側所有待用積木形狀的 2D 矩陣陣列 (1 表示有方塊，0 表示空點)。例如 [[[1,1],[1,0]], [[1,0],[1,1],[0,1]]]
+
+請嚴格僅回傳 valid JSON，格式如下：
+{
+  "rows": 4,
+  "cols": 5,
+  "colTargets": [3, 4, 3, 4, 0],
+  "rowTargets": [4, 4, 3, 3],
+  "obstacles": [
+    [false, false, false, false, false],
+    [false, false, false, false, true],
+    [false, false, false, false, false],
+    [false, false, false, false, true]
+  ],
+  "pieces": [
+    [[1,1],[1,0]],
+    [[1,0],[1,1],[0,1]],
+    [[1,0],[1,1],[1,0]],
+    [[1],[1],[1]]
+  ]
+}`;
+
+            try {
+                const apiKey = ""; // Runtime automatically provides key when empty string
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: mimeType, data: base64Data } }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (jsonText) {
+                    const parsed = JSON.parse(jsonText);
+                    log('AI 辨識解析成功！更新盤面設定中...', 'success');
+                    
+                    if (parsed.rows) state.rows = parsed.rows;
+                    if (parsed.cols) state.cols = parsed.cols;
+                    if (parsed.colTargets) state.colTargets = parsed.colTargets;
+                    if (parsed.rowTargets) state.rowTargets = parsed.rowTargets;
+                    if (parsed.obstacles) state.obstacles = parsed.obstacles;
+                    if (parsed.pieces && Array.isArray(parsed.pieces)) {
+                        state.pieces = parsed.pieces.map((shape, idx) => ({
+                            id: idx + 1,
+                            color: PIECE_COLORS[idx % PIECE_COLORS.length],
+                            shape: shape
+                        }));
+                    }
+
+                    state.solutionGrid = null;
+                    solutionBadge.classList.add('hidden');
+                    syncUIFromState();
+                    renderCanvas();
+                } else {
+                    log('AI 回傳格式不符，請改用手動微調。', 'error');
+                }
+            } catch (err) {
+                log(`AI 辨識連線或解析失敗: ${err.message}`, 'error');
+            } finally {
+                statusBox.classList.add('hidden');
+            }
+        }
+
+        // Modal for Creating New Polyomino Shape
+        function openPieceModal() {
+            modalGridState = Array(4).fill(0).map(() => Array(4).fill(false));
+            const modalGrid = document.getElementById('modalGrid');
+            modalGrid.innerHTML = '';
+
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-10 h-10 rounded-lg border border-slate-800 bg-slate-900 transition hover:border-indigo-500';
+                    btn.onclick = () => {
+                        modalGridState[r][c] = !modalGridState[r][c];
+                        btn.className = modalGridState[r][c]
+                            ? 'w-10 h-10 rounded-lg border border-indigo-400 bg-indigo-600 shadow-md scale-95'
+                            : 'w-10 h-10 rounded-lg border border-slate-800 bg-slate-900 transition hover:border-indigo-500';
+                    };
+                    modalGrid.appendChild(btn);
+                }
+            }
+            document.getElementById('pieceModal').classList.remove('hidden');
+        }
+
+        function closePieceModal() {
+            document.getElementById('pieceModal').classList.add('hidden');
+        }
+
+        function savePieceFromModal() {
+            // Trim modalGridState to bounding box
+            let minR = 4, maxR = -1, minC = 4, maxC = -1;
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (modalGridState[r][c]) {
+                        if (r < minR) minR = r;
+                        if (r > maxR) maxR = r;
+                        if (c < minC) minC = c;
+                        if (c > maxC) maxC = c;
+                    }
+                }
+            }
+
+            if (maxR === -1) {
+                log('請至少選擇一個方格以建立積木！', 'error');
+                return;
+            }
+
+            const shape = [];
+            for (let r = minR; r <= maxR; r++) {
+                const row = [];
+                for (let c = minC; c <= maxC; c++) {
+                    row.push(modalGridState[r][c] ? 1 : 0);
+                }
+                shape.push(row);
+            }
+
+            const newId = state.pieces.length + 1;
+            state.pieces.push({
+                id: newId,
+                color: PIECE_COLORS[(newId - 1) % PIECE_COLORS.length],
+                shape: shape
+            });
+
+            closePieceModal();
+            renderPiecesList();
+            log(`成功新增積木 #${newId}`, 'success');
+        }
+
+        // Generate Rotations and Reflections of a shape matrix
+        function generateOrientations(matrix) {
+            const orientations = [];
+            const keySet = new Set();
+
+            function rotate(m) {
+                const rows = m.length;
+                const cols = m[0].length;
+                const res = Array(cols).fill(0).map(() => Array(rows).fill(0));
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        res[c][rows - 1 - r] = m[r][c];
+                    }
+                }
+                return res;
+            }
+
+            function reflect(m) {
+                return m.map(row => [...row].reverse());
+            }
+
+            let curr = matrix;
+            for (let i = 0; i < 4; i++) {
+                [curr, reflect(curr)].forEach(mat => {
+                    const key = JSON.stringify(mat);
+                    if (!keySet.has(key)) {
+                        keySet.add(key);
+                        orientations.push(mat);
+                    }
+                });
+                curr = rotate(curr);
+            }
+            return orientations;
+        }
+
+        // Backtracking Polyomino Exact Cover Solver
+        function solvePuzzle() {
+            const startTime = performance.now();
+            log('開始執行回溯法 (Backtracking) 尋求積木擺放解法...');
+
+            // Total filled cells required by row targets
+            const requiredTotalCells = state.rowTargets.reduce((a, b) => a + b, 0);
+
+            // Generate all placement options for each piece
+            const piecePlacements = state.pieces.map(piece => {
+                const orientations = generateOrientations(piece.shape);
+                const validPlacements = [];
+
+                orientations.forEach(orient => {
+                    const pRows = orient.length;
+                    const pCols = orient[0].length;
+
+                    for (let r = 0; r <= state.rows - pRows; r++) {
+                        for (let c = 0; c <= state.cols - pCols; c++) {
+                            // Check if placement collides with static obstacles
+                            let ok = true;
+                            const occupied = [];
+                            for (let pr = 0; pr < pRows; pr++) {
+                                for (let pc = 0; pc < pCols; pc++) {
+                                    if (orient[pr][pc]) {
+                                        const gr = r + pr;
+                                        const gc = c + pc;
+                                        if (state.obstacles[gr][gc]) {
+                                            ok = false;
+                                            break;
+                                        }
+                                        occupied.push([gr, gc]);
+                                    }
+                                }
+                                if (!ok) break;
+                            }
+                            if (ok) {
+                                validPlacements.push(occupied);
+                            }
+                        }
+                    }
+                });
+                return { piece, placements: validPlacements };
+            });
+
+            // Working board state: null or piece obj
+            const board = Array(state.rows).fill(0).map(() => Array(state.cols).fill(null));
+
+            // Track row/col cell counts
+            const currentRows = Array(state.rows).fill(0);
+            const currentCols = Array(state.cols).fill(0);
+
+            let solved = false;
+            let solvedBoard = null;
+
+            function backtrack(pieceIdx) {
+                if (pieceIdx === state.pieces.length) {
+                    // Check if row & col targets match exactly
+                    for (let r = 0; r < state.rows; r++) {
+                        if (currentRows[r] !== state.rowTargets[r]) return false;
+                    }
+                    for (let c = 0; c < state.cols; c++) {
+                        if (currentCols[c] !== state.colTargets[c]) return false;
+                    }
+                    // Solution found!
+                    solvedBoard = board.map(row => [...row]);
+                    return true;
+                }
+
+                const { piece, placements } = piecePlacements[pieceIdx];
+
+                for (const pos of placements) {
+                    // Check collision & target overshooting
+                    let canPlace = true;
+                    for (const [r, c] of pos) {
+                        if (board[r][c] !== null || 
+                            currentRows[r] + 1 > state.rowTargets[r] || 
+                            currentCols[c] + 1 > state.colTargets[c]) {
+                            canPlace = false;
+                            break;
+                        }
+                    }
+
+                    if (canPlace) {
+                        // Place piece
+                        for (const [r, c] of pos) {
+                            board[r][c] = piece;
+                            currentRows[r]++;
+                            currentCols[c]++;
+                        }
+
+                        if (backtrack(pieceIdx + 1)) return true;
+
+                        // Unplace piece (Backtrack)
+                        for (const [r, c] of pos) {
+                            board[r][c] = null;
+                            currentRows[r]--;
+                            currentCols[c]--;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            solved = backtrack(0);
+            const endTime = performance.now();
+            const elapsed = (endTime - startTime).toFixed(1);
+
+            if (solved && solvedBoard) {
+                state.solutionGrid = solvedBoard;
+                solutionBadge.classList.remove('hidden');
+                renderCanvas();
+                updateLegend();
+                log(`已成功求解！費時 ${elapsed} ms。`, 'success');
+            } else {
+                state.solutionGrid = null;
+                solutionBadge.classList.add('hidden');
+                renderCanvas();
+                log(`無可行解。請檢查行列提示數或積木數量是否符合。 (耗時 ${elapsed} ms)`, 'error');
+            }
+        }
+
+        // Update Legend List with Placed Block Colors
+        function updateLegend() {
+            legendList.innerHTML = '';
+            state.pieces.forEach(p => {
+                const badge = document.createElement('div');
+                badge.className = 'flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300 font-medium';
+                badge.innerHTML = `
+                    <span class="w-3.5 h-3.5 rounded-sm shadow-sm inline-block" style="background-color: ${p.color}"></span>
+                    <span>積木 #${p.id}</span>
+                `;
+                legendList.appendChild(badge);
+            });
+        }
+    </script>
+</body>
+</html>
