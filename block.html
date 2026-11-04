@@ -694,7 +694,7 @@
 }`;
 
             try {
-                const apiKey = ""; // Runtime automatically provides key when empty string
+                const apiKey = "AIzaSyAi3p_8bQdHwr27m0e3PkNAdiBK_r276AU"; // Runtime automatically provides key when empty string
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
                 const payload = {
@@ -719,9 +719,12 @@
                 });
 
                 const result = await response.json();
-                const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                let jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
                 if (jsonText) {
+                    // 清理可能包含的 markdown 程式碼區塊標記，避免 JSON.parse 失敗
+                    jsonText = jsonText.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim();
+
                     const parsed = JSON.parse(jsonText);
                     log('AI 辨識解析成功！更新盤面設定中...', 'success');
                     
